@@ -2,15 +2,23 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  color-scheme: light;
+  color: #213547;
+  background-color: #ffffff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+#root {
+  min-height: 100vh;
+  min-width: 100vw;
 }
 
 a {
@@ -24,10 +32,13 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* Force full-width containers across the app */
+.max-w-7xl {
+  max-width: 100% !important;
 }
 
 h1 {
@@ -42,16 +53,101 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
 }
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Custom slider styles */
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: none;
+}
+
+/* Line clamp utility */
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* RTL/LTR Support */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .flex-row {
+  flex-direction: row;
+}
+
+[dir="rtl"] .text-right {
+  text-align: right;
+}
+
+[dir="rtl"] .justify-end {
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .order-1 {
+  order: 1;
+}
+
+[dir="rtl"] .order-2 {
+  order: 2;
+}
+
+[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+
+[dir="ltr"] .flex-row-reverse {
+  flex-direction: row-reverse;
+}
+
+[dir="ltr"] .text-left {
+  text-align: left;
+}
+
+[dir="ltr"] .justify-start {
+  justify-content: flex-start;
+}
+
+[dir="ltr"] .order-1 {
+  order: 1;
+}
+
+[dir="ltr"] .order-2 {
+  order: 2;
+}
+
+/* Responsive RTL/LTR adjustments */
+@media (max-width: 768px) {
+  [dir="rtl"] .md\:flex-row {
+    flex-direction: row;
+  }
+  
+  [dir="ltr"] .md\:flex-row-reverse {
+    flex-direction: row-reverse;
+  }
 }
 
 @media (prefers-color-scheme: light) {
