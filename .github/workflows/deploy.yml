@@ -39,4 +39,4 @@ jobs:
           local-dir: ./dist/ # المجلد الذي سيتم رفعه (مجلد البناء)
           server-dir: ./public_html/database/ # المسار الذي سيتم الرفع إليه على هوستنجر
           # --clean-all: سيحذف كل محتويات مجلد server-dir قبل الرفع. מומלץ.
-          clean-all: true
+          dangerous-clean-slate: true
