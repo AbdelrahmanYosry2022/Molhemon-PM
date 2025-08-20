@@ -1,0 +1,46 @@
+# اسم الـ Workflow ليظهر في قائمة Actions
+name: Build and Deploy to Hostinger
+
+# متى يتم تشغيل هذا الـ Workflow
+on:
+  push:
+    branches:
+      - main # يتم التشغيل فقط عند الـ push على الفرع الرئيسي (main)
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # استخدام نظام تشغيل Ubuntu لتنفيذ الأوامر
+
+    steps:
+      # الخطوة 1: سحب الكود من المستودع
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # الخطوة 2: تجهيز بيئة عمل Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # يمكنك تغيير إصدار Node.js إذا لزم الأمر
+          cache: 'npm'
+
+      # الخطوة 3: تثبيت الاعتماديات وبناء المشروع
+      - name: Install Dependencies and Build Project
+        run: |
+          npm install
+          npm run build
+
+      # خطوة جديدة للتحقق من وجود مخرجات البناء
+      - name: Verify Build Output
+        run: ls -R
+
+      # الخطوة 4: نشر الملفات مع تفعيل السجل التشخيصي المفصل
+      - name: Deploy to FTP with Verbose Logging
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: /public_html/database/
+          dangerous-clean-slate: true
+          log-level: verbose
