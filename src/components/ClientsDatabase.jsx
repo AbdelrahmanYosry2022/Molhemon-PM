@@ -866,7 +866,7 @@ const ClientsDatabase = ({ onBack }) => {
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-white ${language === 'ar' ? 'rtl' : 'ltr'}`}>
+    <div className={`min-h-screen w-full bg-gradient-to-br from-gray-50 to-white ${language === 'ar' ? 'rtl' : 'ltr'} flex flex-col`}>
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">

@@ -46,6 +46,7 @@ export default function App() {
   });
 
   const [projects, setProjects] = useState([]);
+  const [clients, setClients] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [activeId, setActiveId] = useState(null);
 
@@ -69,22 +70,27 @@ export default function App() {
   // Get current translations
   const t = appTranslations[language];
 
-  // Fetch all projects when switching to projects view
+  // Fetch all projects and clients when switching to projects view
   useEffect(() => {
     if (currentView === 'projects') {
-      fetchProjects();
+      fetchProjectsAndClients();
     }
   }, [currentView]);
 
-  const fetchProjects = async () => {
+  const fetchProjectsAndClients = async () => {
     setLoading(true);
     try {
       setErrorMsg("");
-      const { data: projectsData, error: projectsError } = await supabase.from('projects').select('*');
+      const [
+        { data: projectsData, error: projectsError },
+        { data: clientsData, error: clientsError }
+      ] = await Promise.all([
+        supabase.from('projects').select('*'),
+        supabase.from('clients').select('*')
+      ]);
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
         setErrorMsg(projectsError.message || 'تعذر تحميل المشاريع');
-        setLoading(false);
       } else {
         const formattedProjects = projectsData?.map(p => ({ 
           ...p, 
@@ -95,8 +101,13 @@ export default function App() {
         if (formattedProjects.length > 0 && !activeId) {
           setActiveId(formattedProjects[0].id);
         }
-        setLoading(false);
       }
+      if (clientsError) {
+        console.error('Error fetching clients:', clientsError);
+      } else {
+        setClients(clientsData || []);
+      }
+      setLoading(false);
     } catch (error) {
       console.error('Error:', error);
       setErrorMsg(error?.message || 'حدث خطأ غير متوقع');
@@ -460,6 +471,7 @@ export default function App() {
                 removeMilestone={removeMilestone}
                 updateMilestone={updateMilestone}
                 language={language}
+                clients={clients}
               />
             ) : (
               <div className={`h-full w-full flex flex-col items-center justify-center text-center text-[${colors.textSubtle}] bg-[${colors.background}] rounded-xl border`}>

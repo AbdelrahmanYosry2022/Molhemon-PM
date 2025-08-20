@@ -1,9 +1,48 @@
-import { createClient } from '@supabase/supabase-js'
+// src/supabaseClient.js
+import { createClient } from '@supabase/supabase-js';
 
-// استبدل 'YOUR_SUPABASE_URL' بالرابط الخاص بمشروعك على Supabase
-const supabaseUrl = 'https://zsshxpdgbnxfuszanaeo.supabase.co';
+// ناخد القيم من .env (Vite بيحمّلها تلقائيًا مع البادئة VITE_)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// استبدل 'YOUR_SUPABASE_ANON_KEY' بمفتاح Anon Key الخاص بمشروعك
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpzc2h4cGRnYm54ZnVzemFuYWVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MDg5ODUsImV4cCI6MjA3MTA4NDk4NX0._g0c6zUR2PCJwMShgyANjWK_qAqKvs2y1qltHhL9x38';
+let _client = null;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// هاننشئ العميل أول مرة فقط وقت الاستخدام
+function getClient() {
+  if (!_client) {
+    if (!/^https?:\/\//i.test(SUPABASE_URL)) {
+      throw new Error('VITE_SUPABASE_URL غير مضبوط أو لا يبدأ بـ https://');
+    }
+    if (!SUPABASE_KEY) {
+      throw new Error('VITE_SUPABASE_ANON_KEY غير مضبوط.');
+    }
+    _client = createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+  return _client;
+}
+
+// Proxy يخلي أي نداء لـ supabase.* يروح للعميل الحقيقي بعد التأكد من المتغيرات
+export const supabase = new Proxy(
+  {},
+  {
+    get(_target, prop) {
+      const client = getClient();
+      const value = client[prop];
+      // لو الخاصية دالة، نربط this علشان ما يبوظش
+      if (typeof value === 'function') {
+        return value.bind(client);
+      }
+      return value;
+    },
+    // دعم النداء كمُستدعى لو حد كتب supabase() بالغلط
+    apply(_target, _thisArg, args) {
+      const client = getClient();
+      return client.apply(client, args);
+    },
+  }
+);
+
+// في حالة احتجت تستدعيه يدويًا
+export function getSupabase() {
+  return getClient();
+}

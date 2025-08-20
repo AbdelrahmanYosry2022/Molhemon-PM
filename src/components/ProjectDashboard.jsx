@@ -18,7 +18,7 @@ function ProjectDashboard({
     milestones, addMilestone, removeMilestone, updateMilestone
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 w-full max-w-7xl mx-auto">
         <header>
             <h1 className={`text-3xl font-bold text-[${colors.textPrimary}]`}>{project.name}</h1>
             {/* --- عرض اسم العميل تحت اسم المشروع --- */}
