@@ -33,14 +33,14 @@ jobs:
       - name: Verify Build Output
         run: ls -R
 
-      # الخطوة 4: نشر الملفات باستخدام FTP
-      - name: Deploy to FTP
+      # الخطوة 4: نشر الملفات مع تفعيل السجل التشخيصي المفصل
+      - name: Deploy to FTP with Verbose Logging
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/ # المجلد الذي سيتم رفعه (مجلد البناء)
-          server-dir: ./public_html/database/ # المسار الذي سيتم الرفع إليه على هوستنجر
-          # --clean-all: سيحذف كل محتويات مجلد server-dir قبل الرفع. מומלץ.
+          local-dir: ./dist/
+          server-dir: /public_html/database/
           dangerous-clean-slate: true
+          log-level: verbose
