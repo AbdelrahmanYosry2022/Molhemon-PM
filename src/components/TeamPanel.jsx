@@ -1,29 +1,27 @@
 // src/components/TeamPanel.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import {
-  User,
-  Users,
-  Shield,
-  CheckCircle2,
-  XCircle,
   Pencil,
   Trash2,
   MailPlus,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
+import EditMemberModal from "./modals/EditMemberModal.jsx";
 
 /* ==================== Badges & Helpers ==================== */
 
 const ROLE_META = {
-  manager: { label: "مدير", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  manager: { label: "مدير",   cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   lead:    { label: "قائد فريق", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-  editor:  { label: "محرر", cls: "bg-purple-50 text-purple-700 border-purple-200" },
-  designer:{ label: "مصمم", cls: "bg-pink-50 text-pink-700 border-pink-200" },
+  editor:  { label: "محرر",   cls: "bg-purple-50 text-purple-700 border-purple-200" },
+  designer:{ label: "مصمم",   cls: "bg-pink-50 text-pink-700 border-pink-200" },
   member:  { label: "عضو فريق", cls: "bg-gray-50 text-gray-700 border-gray-200" },
 };
 
 const STATUS_META = {
-  active:   { label: "نشط",   icon: CheckCircle2, cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  inactive: { label: "غير نشط", icon: XCircle,   cls: "bg-red-50 text-red-700 border-red-200" },
+  active:   { label: "نشط",     icon: CheckCircle2, cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  inactive: { label: "غير نشط", icon: XCircle,      cls: "bg-red-50 text-red-700 border-red-200" },
 };
 
 function RoleBadge({ value }) {
@@ -167,7 +165,7 @@ export default function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
     };
   }, [filtered]);
 
-  // Edit modal
+  // Edit modal state
   const [editing, setEditing] = useState(null); // {id?, name, role, status, joined, email, phone, avatar}
   const openInvite = () =>
     setEditing({
@@ -189,16 +187,7 @@ export default function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
   };
   const removeRow = (id) => onRemove?.(id);
 
-  useEffect(() => {
-    const h = (e) => {
-      if (!editing) return;
-      if (e.key === "Escape") closeEdit();
-      if (e.key === "Enter") saveEdit();
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [editing]);
-
+  // Keyboard shortcuts for modal handled inside modal, keep here to export CSV only
   const exportCSV = () => {
     const csv = toCSV(filtered);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -334,10 +323,7 @@ export default function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
                   </td>
                   <td className={td}>{row.joined || "-"}</td>
                   <td className={td}>
-                    <a
-                      href={`mailto:${row.email}`}
-                      className="text-emerald-700 hover:underline text-sm"
-                    >
+                    <a href={`mailto:${row.email}`} className="text-emerald-700 hover:underline text-sm">
                       {row.email || "-"}
                     </a>
                   </td>
@@ -374,9 +360,9 @@ export default function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
         </div>
       </div>
 
-      {/* نافذة التعديل / الدعوة */}
+      {/* مودال التعديل / الدعوة (خارجي قابل لإعادة الاستخدام) */}
       {editing && (
-        <EditModal
+        <EditMemberModal
           value={editing}
           onChange={setEditing}
           onCancel={closeEdit}
@@ -388,130 +374,5 @@ export default function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
         />
       )}
     </>
-  );
-}
-
-/* ==================== Edit Modal ==================== */
-
-function EditModal({ value, onChange, onCancel, onSave, onDelete }) {
-  const v = value || {};
-  return (
-    <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center">
-      <div dir="rtl" className="bg-white rounded-2xl w-full max-w-lg p-5 border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">
-          {v.id ? "تعديل عضو" : "دعوة عضو جديد"}
-        </h3>
-
-        <div className="grid gap-3">
-          <div className="grid grid-cols-[80px_1fr] gap-3 items-center">
-            <div className="flex items-center justify-center">
-              <img
-                src={v.avatar || "https://i.pravatar.cc/96?img=1"}
-                alt="avatar"
-                className="w-16 h-16 rounded-full object-cover border border-gray-200"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">رابط صورة (اختياري)</label>
-              <input
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                value={v.avatar || ""}
-                onChange={(e) => onChange((s) => ({ ...s, avatar: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">الاسم</label>
-            <input
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-              value={v.name || ""}
-              onChange={(e) => onChange((s) => ({ ...s, name: e.target.value }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">الدور</label>
-              <select
-                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
-                value={v.role || "member"}
-                onChange={(e) => onChange((s) => ({ ...s, role: e.target.value }))}
-              >
-                <option value="manager">مدير</option>
-                <option value="lead">قائد فريق</option>
-                <option value="editor">محرر</option>
-                <option value="designer">مصمم</option>
-                <option value="member">عضو فريق</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">الحالة</label>
-              <select
-                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
-                value={v.status || "active"}
-                onChange={(e) => onChange((s) => ({ ...s, status: e.target.value }))}
-              >
-                <option value="active">نشط</option>
-                <option value="inactive">غير نشط</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">تاريخ الانضمام</label>
-              <input
-                type="date"
-                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
-                value={v.joined || ""}
-                onChange={(e) => onChange((s) => ({ ...s, joined: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">الهاتف</label>
-              <input
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                value={v.phone || ""}
-                onChange={(e) => onChange((s) => ({ ...s, phone: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">البريد الإلكتروني</label>
-            <input
-              type="email"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-              value={v.email || ""}
-              onChange={(e) => onChange((s) => ({ ...s, email: e.target.value }))}
-            />
-          </div>
-        </div>
-
-        <div className="mt-4 flex gap-2 justify-start">
-          <button
-            onClick={onSave}
-            className="px-3 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 inline-flex items-center gap-1"
-          >
-            <Shield size={16} /> حفظ
-          </button>
-          {v.id && (
-            <button
-              onClick={onDelete}
-              className="px-3 py-2 text-sm rounded-lg bg-red-50 text-red-700 hover:bg-red-100 inline-flex items-center gap-1"
-            >
-              <Trash2 size={16} /> حذف
-            </button>
-          )}
-          <button
-            onClick={onCancel}
-            className="px-3 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200"
-          >
-            إلغاء
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
