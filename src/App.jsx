@@ -10,6 +10,7 @@ import HomePage from './components/HomePage.jsx';
 import AppSidebar from './components/AppSidebar.jsx';
 import ProjectDashboard from './components/ProjectDashboard.jsx';
 import ClientsDatabase from './components/ClientsDatabase.jsx';
+import AddProjectModal from './components/AddProjectModal.jsx';
 
 // نظام الترجمة للتطبيق الرئيسي
 const appTranslations = {
@@ -53,6 +54,9 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [payments, setPayments] = useState([]);
   const [milestones, setMilestones] = useState([]);
+
+  // Add Project Modal state
+  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
 
   // حفظ اللغة في localStorage
   useEffect(() => {
@@ -183,20 +187,17 @@ export default function App() {
     }
   };
 
-  const addProject = async () => {
-    const { data, error } = await supabase.from('projects').insert({ 
-      name: `مشروع ${projects.length + 1}`, 
-      total: 50000,
-      start_date: toISO(new Date()),
-      end_date: toISO(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)) // 90 days from now
-    }).select().single();
-    
-    if (error) console.error("Error adding project:", error);
-    else if (data) {
-        const formattedProject = { ...data, start: data.start_date, end: data.end_date };
-        setProjects(ps => [...ps, formattedProject]);
-        setActiveId(data.id);
-    }
+  // Open Add Project Modal
+  const addProject = () => {
+    setShowAddProjectModal(true);
+  };
+
+  // Handle project added from modal
+  const handleProjectAdded = (newProject) => {
+    const formattedProject = { ...newProject, start: newProject.start_date, end: newProject.end_date };
+    setProjects(ps => [...ps, formattedProject]);
+    setActiveId(newProject.id);
+    setShowAddProjectModal(false);
   };
 
   const deleteProject = async () => {
@@ -487,6 +488,14 @@ export default function App() {
             )}
           </main>
         </div>
+
+        {showAddProjectModal && (
+          <AddProjectModal
+            onClose={() => setShowAddProjectModal(false)}
+            onProjectAdded={handleProjectAdded}
+            clients={clients}
+          />
+        )}
       </>
     );
   }
