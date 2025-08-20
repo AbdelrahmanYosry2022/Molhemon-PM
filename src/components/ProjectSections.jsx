@@ -34,6 +34,9 @@ export default function ProjectSections({
   team = project?.team || [],
   files = project?.files || [],
   onUpdateTeamMember,
+  addPayment,
+  removePayment,
+  updatePayment,
 }) {
   const isAr = language === "ar";
   const T = (ar, en) => (isAr ? ar : en);
@@ -202,16 +205,20 @@ export default function ProjectSections({
             </div>
 
             {/* جدول المدفوعات */}
-            <PaymentsTable currency="EGP" payments={payments.map(p => ({
-              ...p,
-              date: p.pay_date || p.date,
-              category: categories.find(c => c.id === p.category_id)?.name || p.category || "—"
-            }))} categories={categories} />
+            <PaymentsTable
+              currency="EGP"
+              payments={payments.map(p => ({
+                ...p,
+                date: p.pay_date || p.date,
+                category: categories.find(c => c.id === p.category_id)?.name || p.category || "—"
+              }))}
+              categories={categories}
+              onAdd={addPayment}
+              onUpdate={updatePayment}
+              onRemove={removePayment}
+            />
 
-            {/* تحليلات سريعة (Placeholder) */}
-            <Card title={T("تحليلات سريعة", "Quick Analytics")}> 
-              <SpendingOverTimeChart payments={payments} currency="EGP" />
-            </Card>
+          
 
           </div>
         )}

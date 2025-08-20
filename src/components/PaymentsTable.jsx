@@ -1,11 +1,11 @@
 // src/components/PaymentsTable.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Plus, Trash2, Pencil, Download } from "lucide-react";
 
 function toCSV(rows) {
   const header = ["التاريخ", "البند", "الملاحظة", "المبلغ"];
   const body = rows.map(r => [r.date, r.category || "", r.note || "", r.amount ?? ""]);
-  return [header, ...body].map(a => a.map(x => `"${String(x ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  return [header, ...body].map(a => a.map(x => `"${String(x ?? "").replace( /"/g, '""')}"`).join(",")).join("\n");
 }
 
 export default function PaymentsTable({
@@ -14,10 +14,6 @@ export default function PaymentsTable({
   currency = "EGP",
   onAdd, onUpdate, onRemove,
 }) {
-  // يبدأ دائماً ببيانات فارغة، ويعتمد فقط على البيانات المدخلة
-  const [rows, setRows] = useState(payments);
-  useEffect(() => setRows(payments), [payments]);
-
   // فلاتر / بحث
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
@@ -26,7 +22,7 @@ export default function PaymentsTable({
   const [sort, setSort] = useState({ key: "date", dir: "desc" });
 
   const filtered = useMemo(() => {
-    let r = rows.filter(x =>
+    let r = payments.filter(x =>
       (!q || (x.note + " " + (x.category||"")).toLowerCase().includes(q.toLowerCase())) &&
       (cat === "all" || x.category === cat) &&
       (!from || x.date >= from) &&
@@ -38,7 +34,7 @@ export default function PaymentsTable({
       return sort.dir === "asc" ? res : -res;
     });
     return r;
-  }, [rows, q, cat, from, to, sort]);
+  }, [payments, q, cat, from, to, sort]);
 
   const total = filtered.reduce((s, x) => s + (Number(x.amount) || 0), 0);
   const fmt = (n) => `${Number(n).toLocaleString("en-US")} ${currency}`;
@@ -52,16 +48,11 @@ export default function PaymentsTable({
     if (!editing) return;
     const isNew = !editing.id;
     const row = { ...editing, amount: Number(editing.amount) || 0, id: editing.id || crypto.randomUUID() };
-    setRows(prev => {
-      const next = isNew ? [row, ...prev] : prev.map(r => r.id === row.id ? row : r);
-      return next;
-    });
     isNew ? onAdd?.(row) : onUpdate?.(row.id, row);
     closeEdit();
   };
 
   const removeRow = (id) => {
-    setRows(prev => prev.filter(r => r.id !== id));
     onRemove?.(id);
   };
 
@@ -88,7 +79,7 @@ export default function PaymentsTable({
               className="border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
             >
               <option value="all">الكل</option>
-              {[...new Set((categories.length? categories.map(c=>c.name) : rows.map(r=>r.category)).filter(Boolean))].map((c) => (
+              {[...new Set((categories.length? categories.map(c=>c.name) : payments.map(r=>r.category)).filter(Boolean))].map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
@@ -136,7 +127,7 @@ export default function PaymentsTable({
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              {[
+              {[ 
                 { k: "date", label: "التاريخ" },
                 { k: "category", label: "البند" },
                 { k: "note", label: "الملاحظة" },
@@ -217,17 +208,12 @@ export default function PaymentsTable({
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">البند</label>
                   <input
-                    list="cats"
+                    type="text"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
                     value={editing.category || ""}
                     onChange={e => setEditing(s => ({ ...s, category: e.target.value }))}
                     placeholder="Production / Editing…"
                   />
-                  <datalist id="cats">
-                    {[...new Set((categories.length? categories.map(c=>c.name) : rows.map(r=>r.category)).filter(Boolean))].map(c => (
-                      <option key={c} value={c} />
-                    ))}
-                  </datalist>
                 </div>
               </div>
 

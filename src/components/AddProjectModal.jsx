@@ -6,9 +6,13 @@ function AddProjectModal({ onClose, onProjectAdded, clients }) {
   const [formData, setFormData] = useState({
     name: '',
     total: '',
+    currency: 'EGP',
+    description: '',
     start_date: '',
     end_date: '',
-    client_id: ''
+    client_id: '',
+    deliverables_text: '', // user enters newline or semicolon separated list
+    team_text: '', // user enters lines like "Name - Role" or comma separated
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -29,6 +33,7 @@ function AddProjectModal({ onClose, onProjectAdded, clients }) {
 
     try {
       // تحويل القيم المنطقية
+      // Only include columns that exist in `projects` table schema
       const projectData = {
         name: formData.name,
         total: parseFloat(formData.total) || 0,
@@ -51,14 +56,37 @@ function AddProjectModal({ onClose, onProjectAdded, clients }) {
       // إدخال الخصائص الإضافية للمشروع (مع معالجة الأخطاء المحتملة)
       let attributesError = null;
       try {
-        // محاولة إضافة السجل باستخدام RLS
+        // تحويل النصوص إلى مصفوفات بسيطة
+        const parseList = (s) => {
+          if (!s) return [];
+          return s
+            .split(/\n|;|,/) // split on newline, semicolon or comma
+            .map(x => x.trim())
+            .filter(Boolean);
+        };
+
+        const parseTeam = (s) => {
+          return parseList(s).map(item => {
+            const parts = item.split(/\s*-\s*/);
+            return parts.length > 1 ? { name: parts[0].trim(), role: parts.slice(1).join(' - ').trim() } : { name: item.trim(), role: '' };
+          });
+        };
+
+        const deliverables = parseList(formData.deliverables_text);
+        const team = parseTeam(formData.team_text);
+
+        // محاولة إضافة السجل باستخدام RLS، مع تمرير metadata مبدئي
         const { error: attrError } = await supabase
           .from('project_attributes')
           .insert([{ 
             project_id: data.id,
-            client_name: clients.find(c => c.id === data.client_id)?.first_name || 'عميل غير محدد',
-            service: 'غير محدد',
-            status: 'قيد التنفيذ'
+            client_name: clients?.find(c => c.id === data.client_id)?.first_name || 'عميل غير محدد',
+            service: 'General',
+            status: 'قيد التنفيذ',
+            description: formData.description || null,
+            currency: formData.currency || 'EGP',
+            deliverables: deliverables,
+            team: team
           }]);
 
         attributesError = attrError;
@@ -102,6 +130,63 @@ function AddProjectModal({ onClose, onProjectAdded, clients }) {
         )}
 
         <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">اسم المشروع</label>
+                <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="total">الميزانية الإجمالية</label>
+                <div className="flex gap-2">
+                  <input type="number" id="total" name="total" value={formData.total} onChange={handleInputChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required />
+                  <select name="currency" value={formData.currency} onChange={handleInputChange} className="border rounded px-2">
+                    <option value="EGP">EGP</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="start_date">تاريخ البدء</label>
+                <input type="date" id="start_date" name="start_date" value={formData.start_date} onChange={handleInputChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="end_date">تاريخ الانتهاء</label>
+                <input type="date" id="end_date" name="end_date" value={formData.end_date} onChange={handleInputChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="client_id">العميل</label>
+              <select id="client_id" name="client_id" value={formData.client_id} onChange={handleInputChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <option value="">اختر عميل</option>
+                {clients.map(client => (
+                  <option key={client.id} value={client.id}>{client.first_name} {client.last_name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">وصف المشروع (اختياري)</label>
+              <textarea id="description" name="description" value={formData.description} onChange={handleInputChange} rows={3} className="w-full border rounded px-3 py-2 text-sm" placeholder="أضف وصفًا مختصرًا للمشروع، أهدافه ونطاقه." />
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="deliverables_text">المخرجات الأساسية (سطر لكل مخرج)</label>
+                <textarea id="deliverables_text" name="deliverables_text" value={formData.deliverables_text} onChange={handleInputChange} rows={4} className="w-full border rounded px-3 py-2 text-sm" placeholder="مثال: Trailer 30s; Key Art v1; Episode 1 - Final" />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="team_text">أعضاء الفريق الأساسيين (سطر: الاسم - الدور)</label>
+                <textarea id="team_text" name="team_text" value={formData.team_text} onChange={handleInputChange} rows={4} className="w-full border rounded px-3 py-2 text-sm" placeholder="مثال: Ahmed Hassan - Producer; Mona Ali - Editor" />
+              </div>
+            </div>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
               اسم المشروع
@@ -181,7 +266,7 @@ function AddProjectModal({ onClose, onProjectAdded, clients }) {
             </select>
           </div>
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 mt-6">
             <button
               type="button"
               onClick={onClose}

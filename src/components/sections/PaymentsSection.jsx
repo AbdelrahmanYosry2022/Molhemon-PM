@@ -8,7 +8,7 @@ function PaymentsSection({ payments, categories, addPayment, removePayment, upda
     <div className={`bg-[${colors.background}] p-4 rounded-xl border border-[${colors.border}] shadow-sm`}>
       <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">المدفوعات</h3>
-          <button onClick={addPayment} className={`px-4 py-2 rounded-md bg-white text-[${colors.primary}] border border-[${colors.border}] hover:bg-[${colors.primaryMuted}] inline-flex items-center gap-2`}><Plus size={16} /> إضافة دفعة</button>
+          <button onClick={() => addPayment({ amount: 0, date: new Date().toISOString().slice(0, 10), note: '', category: '' })} className={`px-4 py-2 rounded-md bg-white text-[${colors.primary}] border border-[${colors.border}] hover:bg-[${colors.primaryMuted}] inline-flex items-center gap-2`}><Plus size={16} /> إضافة دفعة</button>
       </div>
       <div className="space-y-3">
           {payments.map((p) => (

@@ -25,13 +25,13 @@ export default function OverviewPanel({
   const utilization = budgetTotal > 0 ? Math.round((spent / budgetTotal) * 100) : 0;
 
   // آخر المدفوعات (أحدث 3)
-  const lastPayments = [...payments]
-    .sort((a, b) => String(b.pay_date).localeCompare(String(a.pay_date)))
+    const lastPayments = [...payments]
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)))
     .slice(0, 3)
     .map(p => ({
       id: p.id,
-      date: p.pay_date,
-      category: categories.find(c => c.id === p.category_id)?.name || "-",
+      date: p.date,
+      category: categories.find(c => c.id === p.category_id)?.name || p.category || "-",
       note: p.note,
       amount: p.amount
     }));

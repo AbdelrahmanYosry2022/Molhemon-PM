@@ -212,18 +212,35 @@ export default function App() {
   };
 
   // --- Payment CRUD ---
-  const addPayment = async () => {
-    const { data, error } = await supabase.from('payments').insert({ 
-      amount: 0, 
-      pay_date: toISO(new Date()), 
-      note: "", 
-      category_id: categories[0]?.id || null, 
-      project_id: project.id 
+  const addPayment = async (newPayment) => {
+    let categoryId = categories.find(c => c.name === newPayment.category)?.id || null;
+
+    if (!categoryId && newPayment.category) {
+      // Category does not exist, so create it.
+      const { data: newCategory, error: newCategoryError } = await supabase.from('categories').insert({
+        name: newPayment.category,
+        project_id: project.id
+      }).select().single();
+
+      if (newCategoryError) {
+        console.error('Error creating new category:', newCategoryError);
+      } else if (newCategory) {
+        categoryId = newCategory.id;
+        setCategories(c => [...c, newCategory]);
+      }
+    }
+
+    const { data, error } = await supabase.from('payments').insert({
+      amount: newPayment.amount,
+      pay_date: newPayment.date,
+      note: newPayment.note,
+      category_id: categoryId,
+      project_id: project.id
     }).select().single();
-    
+
     if (error) console.error('Error adding payment:', error);
     else if (data) {
-        const categoryName = categories.find(c => c.id === data.category_id)?.name || '';
+        const categoryName = categories.find(c => c.id === data.category_id)?.name || newPayment.category || '';
         const formattedPayment = { ...data, date: data.pay_date, category: categoryName };
         setPayments(p => [...p, formattedPayment]);
     }
@@ -239,14 +256,28 @@ export default function App() {
       const dbPatch = { ...patch };
       if (patch.date !== undefined) { dbPatch.pay_date = patch.date; delete dbPatch.date; }
       if (patch.category !== undefined) {
-          const category = categories.find(c => c.name === patch.category);
-          dbPatch.category_id = category ? category.id : null;
+          let categoryId = categories.find(c => c.name === patch.category)?.id || null;
+          if (!categoryId && patch.category) {
+            // Category does not exist, so create it.
+            const { data: newCategory, error: newCategoryError } = await supabase.from('categories').insert({
+              name: patch.category,
+              project_id: project.id
+            }).select().single();
+
+            if (newCategoryError) {
+              console.error('Error creating new category:', newCategoryError);
+            } else if (newCategory) {
+              categoryId = newCategory.id;
+              setCategories(c => [...c, newCategory]);
+            }
+          }
+          dbPatch.category_id = categoryId;
           delete dbPatch.category;
       }
       const { data, error } = await supabase.from('payments').update(dbPatch).eq('id', id).select().single();
       if (error) console.error('Error updating payment:', error);
       else if (data) {
-          const categoryName = categories.find(c => c.id === data.category_id)?.name || '';
+          const categoryName = categories.find(c => c.id === data.category_id)?.name || patch.category || '';
           const formattedPayment = { ...data, date: data.pay_date, category: categoryName };
           setPayments(arr => arr.map(it => it.id === id ? formattedPayment : it));
       }
