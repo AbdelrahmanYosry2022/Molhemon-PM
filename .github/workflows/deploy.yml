@@ -29,6 +29,10 @@ jobs:
           npm install
           npm run build
 
+      # خطوة جديدة للتحقق من وجود مخرجات البناء
+      - name: Verify Build Output
+        run: ls -R
+
       # الخطوة 4: نشر الملفات باستخدام FTP
       - name: Deploy to FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
