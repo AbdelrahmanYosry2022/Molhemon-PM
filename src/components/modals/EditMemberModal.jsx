@@ -47,23 +47,40 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
 
         <div className="grid gap-3">
           {/* Avatar */}
-          <div className="grid grid-cols-[80px_1fr] gap-3 items-center">
-            <div className="flex items-center justify-center">
-              <img
-                src={v.avatar || "https://i.pravatar.cc/96?img=1"}
-                alt="avatar"
-                className="w-16 h-16 rounded-full object-cover border border-gray-200"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">رابط صورة (اختياري)</label>
-              <input
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-                value={v.avatar || ""}
-                onChange={(e) => onChange((s) => ({ ...s, avatar: e.target.value }))}
-                placeholder="https://…"
-              />
-            </div>
+          <div className="flex items-center justify-center relative mb-3">
+            <img
+              src={v.avatar_url || v.avatar || "https://i.pravatar.cc/96?img=1"}
+              alt="avatar"
+              className="w-16 h-16 rounded-full object-cover border border-gray-200"
+            />
+            <button
+              type="button"
+              className="absolute bottom-0 right-0 bg-white border border-gray-300 rounded-full p-1 shadow"
+              style={{ transform: 'translate(30%, 30%)' }}
+              title="تغيير الصورة"
+              onClick={() => document.getElementById('avatar-input-modal')?.click()}
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+            </button>
+            <input
+              type="file"
+              id="avatar-input-modal"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  // رفع الصورة وتحديث الرابط
+                  if (v.id && window.uploadTeamAvatar) {
+                    const url = await window.uploadTeamAvatar(file, v.id);
+                    onChange((s) => ({ ...s, avatar_url: url }));
+                  } else {
+                    // في حالة الإضافة الجديدة، نخزن الملف مؤقتًا
+                    onChange((s) => ({ ...s, avatar: file }));
+                  }
+                }
+              }}
+            />
           </div>
 
           {/* Name */}

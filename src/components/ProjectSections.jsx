@@ -23,7 +23,18 @@ import {
  * تبويب لأقسام إدارة المشروع.
  * كل تبويب في كومبوننت منفصل لسهولة الصيانة.
  */
-export default function ProjectSections({ projectId, language = "ar" }) {
+export default function ProjectSections({
+  projectId,
+  language = "ar",
+  project,
+  payments = [],
+  milestones = [],
+  categories = [],
+  deliverables = [],
+  team = [],
+  files = [],
+  onUpdateTeamMember,
+}) {
   const isAr = language === "ar";
   const T = (ar, en) => (isAr ? ar : en);
 
@@ -60,31 +71,27 @@ export default function ProjectSections({ projectId, language = "ar" }) {
     </div>
   );
 
-  // ===== Demo data مشتركة لتبويب المدفوعات (علشان الأرقام تبقى متسقة مع الجدول)
-  const paymentsDemo = useMemo(
-    () => [
-      { id: "p1", date: "2025-08-15", category: "Production", note: "Camera rent", amount: 5500 },
-      { id: "p2", date: "2025-08-14", category: "Editing",    note: "Freelancer",  amount: 3200 },
-      { id: "p3", date: "2025-08-12", category: "Marketing",  note: "Ads",         amount: 1800 },
-    ],
-    []
-  );
-
-  // حسابات نظرة سريعة
+  // حسابات نظرة سريعة من الداتا الحقيقية
   const paymentsSummary = useMemo(() => {
+    // ربط اسم البند من الفئات
+    const paymentsWithCat = payments.map(p => ({
+      ...p,
+      category: categories.find(c => c.id === p.category_id)?.name || p.category || "—",
+      date: p.pay_date || p.date,
+    }));
     const byCat = {};
     let total = 0;
-    paymentsDemo.forEach(p => {
+    paymentsWithCat.forEach(p => {
       total += Number(p.amount) || 0;
       const k = p.category || "—";
       byCat[k] = (byCat[k] || 0) + (Number(p.amount) || 0);
     });
     const byCatArr = Object.entries(byCat).map(([category, value]) => ({ category, value }));
-    const latest = [...paymentsDemo]
+    const latest = [...paymentsWithCat]
       .sort((a, b) => String(b.date).localeCompare(String(a.date)))
       .slice(0, 3);
 
-    // حدود افتراضية للتنبيه (بدّلها لاحقًا بقيم من الداتا)
+    // حدود افتراضية للتنبيه (يمكنك تعديلها لاحقاً)
     const thresholds = { Production: 5000, Editing: 3000, Marketing: 2000 };
     const alerts = byCatArr
       .filter(x => thresholds[x.category] && x.value > thresholds[x.category])
@@ -95,7 +102,7 @@ export default function ProjectSections({ projectId, language = "ar" }) {
       }));
 
     return { total, byCatArr, latest, alerts };
-  }, [paymentsDemo]);
+  }, [payments, categories]);
 
   const fmtEGP = (n) => `${Number(n).toLocaleString("en-US")} EGP`;
 
@@ -111,7 +118,17 @@ export default function ProjectSections({ projectId, language = "ar" }) {
       {/* محتوى التبويب */}
       <div className="mt-5">
         {/* ====== OVERVIEW ====== */}
-        {active === "overview" && <OverviewPanel language={language} />}
+        {active === "overview" && (
+          <OverviewPanel
+            language={language}
+            project={project}
+            payments={payments}
+            milestones={milestones}
+            categories={categories}
+            team={team}
+            files={files}
+          />
+        )}
 
         {/* ====== PAYMENTS ====== */}
         {active === "payments" && (
@@ -185,24 +202,34 @@ export default function ProjectSections({ projectId, language = "ar" }) {
             </div>
 
             {/* جدول المدفوعات */}
-            <PaymentsTable currency="EGP" payments={paymentsDemo} />
+            <PaymentsTable currency="EGP" payments={payments.map(p => ({
+              ...p,
+              date: p.pay_date || p.date,
+              category: categories.find(c => c.id === p.category_id)?.name || p.category || "—"
+            }))} categories={categories} />
 
             {/* تحليلات سريعة (Placeholder) */}
-            <Card title={T("تحليلات سريعة", "Quick Analytics")}>
-  <SpendingOverTimeChart payments={paymentsDemo} currency="EGP" />
-</Card>
+            <Card title={T("تحليلات سريعة", "Quick Analytics")}> 
+              <SpendingOverTimeChart payments={payments} currency="EGP" />
+            </Card>
 
           </div>
         )}
 
         {/* ====== MILESTONES ====== */}
-        {active === "milestones" && <MilestonesPanel />}
+        {active === "milestones" && (
+          <MilestonesPanel items={milestones} />
+        )}
 
         {/* ====== DELIVERABLES ====== */}
-        {active === "deliverables" && <DeliverablesPanel />}
+        {active === "deliverables" && (
+          <DeliverablesPanel items={deliverables} />
+        )}
 
         {/* ====== TEAM ====== */}
-        {active === "team" && <TeamPanel />}
+        {active === "team" && (
+          <TeamPanel items={team} onUpdate={onUpdateTeamMember} />
+        )}
 
         {/* ====== FILES ====== */}
         {active === "files" && <FilesPanel />}

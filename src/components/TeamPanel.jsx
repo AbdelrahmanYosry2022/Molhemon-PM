@@ -1,3 +1,4 @@
+export default TeamPanel;
 // src/components/TeamPanel.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import {
@@ -8,6 +9,7 @@ import {
   XCircle,
 } from "lucide-react";
 import EditMemberModal from "./modals/EditMemberModal.jsx";
+import { supabase } from '../supabaseClient';
 
 /* ==================== Badges & Helpers ==================== */
 
@@ -63,68 +65,9 @@ function toCSV(rows) {
     .join("\n");
 }
 
-/* ==================== Main Panel ==================== */
-
-export default function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
-  // Demo data if none provided
-  const demo = useMemo(
-    () =>
-      items.length
-        ? items
-        : [
-            {
-              id: "u1",
-              name: "Ahmed Hassan",
-              role: "manager",
-              status: "active",
-              joined: "2025-07-01",
-              email: "ahmed@example.com",
-              phone: "+201000000001",
-              avatar: "https://i.pravatar.cc/96?img=12",
-            },
-            {
-              id: "u2",
-              name: "Mona Ali",
-              role: "lead",
-              status: "active",
-              joined: "2025-07-10",
-              email: "mona@example.com",
-              phone: "+201000000002",
-              avatar: "https://i.pravatar.cc/96?img=5",
-            },
-            {
-              id: "u3",
-              name: "Hady Nabil",
-              role: "designer",
-              status: "active",
-              joined: "2025-08-02",
-              email: "hady@example.com",
-              phone: "+201000000003",
-              avatar: "https://i.pravatar.cc/96?img=3",
-            },
-            {
-              id: "u4",
-              name: "Omar Youssef",
-              role: "editor",
-              status: "inactive",
-              joined: "2025-06-20",
-              email: "omar@example.com",
-              phone: "+201000000004",
-              avatar: "https://i.pravatar.cc/96?img=22",
-            },
-            {
-              id: "u5",
-              name: "Sara Mostafa",
-              role: "member",
-              status: "active",
-              joined: "2025-08-12",
-              email: "sara@example.com",
-              phone: "+201000000005",
-              avatar: "https://i.pravatar.cc/96?img=15",
-            },
-          ],
-    [items]
-  );
+function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
+  // استخدام الداتا الحقيقية من props
+  const demo = useMemo(() => items, [items]);
 
   // Filters
   const [q, setQ] = useState("");
@@ -178,11 +121,30 @@ export default function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
       phone: "",
       avatar: "",
     });
-  const openEdit = (row) => setEditing({ ...row });
+  const openEdit = (row) => setEditing({ ...row, avatar: null });
   const closeEdit = () => setEditing(null);
-  const saveEdit = () => {
+  // رفع صورة العضو وربطها
+  async function uploadTeamAvatar(file, memberId) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${memberId}.${fileExt}`;
+    const filePath = `team/${fileName}`;
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+    if (error) throw error;
+    const { publicUrl } = supabase.storage.from('avatars').getPublicUrl(filePath).data;
+    return publicUrl;
+  }
+
+  const saveEdit = async () => {
     if (!editing) return;
-    editing.id ? onUpdate?.(editing.id, editing) : onAdd?.(editing);
+    let payload = { ...editing };
+    // إذا تم اختيار صورة جديدة
+    if (editing.avatar && editing.avatar instanceof File) {
+      const url = await uploadTeamAvatar(editing.avatar, editing.id || crypto.randomUUID());
+      payload.avatar_url = url;
+    }
+    editing.id ? onUpdate?.(editing.id, payload) : onAdd?.(payload);
     closeEdit();
   };
   const removeRow = (id) => onRemove?.(id);
@@ -306,12 +268,36 @@ export default function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
                 <tr key={row.id} className="odd:bg-white even:bg-gray-50">
                   {/* Avatar + Name (الصورة يمين والاسم يسارها) */}
                   <td className={`${td}`}>
-                    <div className="flex items-center justify-start gap-3">
-                      <img
-                        src={row.avatar || "https://i.pravatar.cc/96?img=1"}
-                        alt={row.name}
-                        className="w-9 h-9 rounded-full object-cover border border-gray-200"
-                      />
+                    <div className="flex items-center justify-start gap-3 relative">
+                      <div className="relative group">
+                        <img
+                          src={row.avatar_url || row.avatar || "https://i.pravatar.cc/96?img=1"}
+                          alt={row.name}
+                          className="w-9 h-9 rounded-full object-cover border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          className="absolute bottom-0 right-0 bg-white border border-gray-300 rounded-full p-1 shadow group-hover:scale-110 transition-all"
+                          style={{ transform: 'translate(30%, 30%)' }}
+                          title="تغيير الصورة"
+                          onClick={() => document.getElementById(`avatar-input-${row.id}`)?.click()}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <input
+                          type="file"
+                          id={`avatar-input-${row.id}`}
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const url = await uploadTeamAvatar(file, row.id);
+                              onUpdate?.(row.id, { ...row, avatar_url: url });
+                            }
+                          }}
+                        />
+                      </div>
                       <div className="font-medium text-gray-800">{row.name}</div>
                     </div>
                   </td>
