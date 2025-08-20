@@ -143,8 +143,23 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
   const welcomeText = language === 'ar' ? 'مرحباً بك في لوحة التحكم' : 'Welcome to Dashboard';
   const subtitleText = language === 'ar' ? 'اختر القسم الذي تريد إدارته' : 'Choose the section you want to manage';
 
+  // ====== إضافة جديدة: دالة إجراءات سريعة (Placeholder) ======
+  const handleAction = (actionId) => {
+    console.log('Quick action:', actionId);
+    if (typeof onNavigate === 'function') {
+      const map = {
+        newProject: 'projects',
+        newClient: 'clients',
+        newInvoice: 'invoices',
+        newDocument: 'documents',
+      };
+      const target = map[actionId];
+      if (target) onNavigate(target);
+    }
+  };
+
   return (
-    <div className={`min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-50 relative overflow-hidden ${language === 'ar' ? 'rtl' : 'ltr'}`}>
+    <div className={`h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-50 relative overflow-y-auto ${language === 'ar' ? 'rtl' : 'ltr'}`}>
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-cyan-200 rounded-full opacity-20 blur-3xl animate-pulse"></div>
@@ -153,7 +168,7 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 bg-white/80 backdrop-blur-sm border-b border-gray-100">
+  <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className={`flex items-center justify-between ${language === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
             <div className={`flex items-center gap-3 ${language === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
@@ -175,7 +190,7 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+  <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 pb-24">
         {/* Welcome Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
@@ -190,8 +205,8 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
           </p>
         </div>
 
-        {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {/* Cards Grid */}
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {menuItems.map((item) => (
             <div
               key={item.id}
@@ -262,8 +277,87 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
           ))}
         </div>
 
-        {/* Quick Stats */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* ====== إضافة جديدة: إجراءات سريعة ====== */}
+        <section
+          className="mb-10"
+          style={{
+            animation: 'slideUp 0.5s ease-out forwards',
+            animationDelay: '0.65s',
+            opacity: 0
+          }}
+        >
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800">إجراءات سريعة</h3>
+              <span className="text-xs text-gray-500">اختصار للوصول السريع</span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* عميل جديد */}
+              <button
+                onClick={() => handleAction('newClient')}
+                className="group bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 hover:shadow-lg transition-all duration-300 rounded-xl p-4 text-right"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow">
+                    <Users className="text-white" size={20} />
+                  </div>
+                  <ArrowRight className="text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" size={18} />
+                </div>
+                <div className="text-sm text-gray-700 font-semibold">عميل جديد</div>
+                <div className="text-xs text-gray-500 mt-1">إضافة بيانات عميل</div>
+              </button>
+
+              {/* مشروع جديد */}
+              <button
+                onClick={() => handleAction('newProject')}
+                className="group bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 hover:shadow-lg transition-all duration-300 rounded-xl p-4 text-right"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow">
+                    <LayoutDashboard className="text-white" size={20} />
+                  </div>
+                  <ArrowRight className="text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" size={18} />
+                </div>
+                <div className="text-sm text-gray-700 font-semibold">مشروع جديد</div>
+                <div className="text-xs text-gray-500 mt-1">بدء مشروع وتتبع الميزانية</div>
+              </button>
+
+              {/* فاتورة جديدة */}
+              <button
+                onClick={() => handleAction('newInvoice')}
+                className="group bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 hover:shadow-lg transition-all duration-300 rounded-xl p-4 text-right"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow">
+                    <Receipt className="text-white" size={20} />
+                  </div>
+                  <ArrowRight className="text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" size={18} />
+                </div>
+                <div className="text-sm text-gray-700 font-semibold">فاتورة جديدة</div>
+                <div className="text-xs text-gray-500 mt-1">إنشاء وإرسال فاتورة</div>
+              </button>
+
+              {/* مستند جديد */}
+              <button
+                onClick={() => handleAction('newDocument')}
+                className="group bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 hover:shadow-lg transition-all duration-300 rounded-xl p-4 text-right"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow">
+                    <FileText className="text-white" size={20} />
+                  </div>
+                  <ArrowRight className="text-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" size={18} />
+                </div>
+                <div className="text-sm text-gray-700 font-semibold">مستند جديد</div>
+                <div className="text-xs text-gray-500 mt-1">إرفاق/إنشاء مستند</div>
+              </button>
+            </div>
+          </div>
+        </section>
+
+  {/* Quick Stats */}
+  <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
           {[
             { label: 'المشاريع النشطة', value: '12', trend: '+3' },
             { label: 'العملاء', value: '48', trend: '+5' },
