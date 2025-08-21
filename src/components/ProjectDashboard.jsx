@@ -22,17 +22,38 @@ function ProjectDashboard({
   addMilestone,
   removeMilestone,
   updateMilestone,
+  addDeliverable,
+  removeDeliverable,
+  updateDeliverable,
   language,
-  clients
+  clients,
+  deliverables,
+  teamMembers,
+  addTeamMember,
+  updateTeamMember,
+  removeTeamMember
 }) {
   // دالة تحديث عضو الفريق (يمكن تمريرها كـ prop لاحقاً إذا لزم الأمر)
-  const handleUpdateTeamMember = async (id, payload) => {
-    // يمكن تنفيذ هذه الدالة لاحقاً حسب الحاجة
-    console.log('Update team member:', id, payload);
+  // دوال إدارة أعضاء الفريق: إضافة / تحديث / إزالة
+  const handleAddTeamMember = async (payload) => {
+    const newMember = { ...payload };
+    if (!newMember.id) newMember.id = crypto.randomUUID?.() || String(Date.now());
+    const newTeam = [...(project?.team || []), newMember];
+    await updateProject({ team: newTeam });
   };
 
-  // بيانات فارغة دائماً عند الإنشاء
-  const deliverables = project?.deliverables || [];
+  const handleUpdateTeamMember = async (id, patch) => {
+    const existing = project?.team || [];
+    const newTeam = existing.map((m) => (m.id === id ? { ...m, ...patch } : m));
+    await updateProject({ team: newTeam });
+  };
+
+  const handleRemoveTeamMember = async (id) => {
+    const existing = project?.team || [];
+    const newTeam = existing.filter((m) => m.id !== id);
+    await updateProject({ team: newTeam });
+  };
+
   const team = project?.team || [];
 
   // ربط العميل الحقيقي
@@ -58,15 +79,36 @@ function ProjectDashboard({
         projectId={project?.id}
         language={language || "ar"}
         project={project}
-        client={realClient}
-        clients={clients}
-        categories={categories}
+  client={realClient}
+  clients={clients}
+  categories={categories}
         milestones={milestones}
         payments={payments}
         deliverables={deliverables}
         team={team}
         currency={currency}
-        onUpdateTeamMember={handleUpdateTeamMember}
+        onUpdateTeamMember={async (id, patch) => {
+          if (typeof updateTeamMember === 'function') {
+            const res = await updateTeamMember(id, patch);
+            return res;
+          }
+          return handleUpdateTeamMember(id, patch);
+        }}
+        onAddTeamMember={async (member) => {
+          if (typeof addTeamMember === 'function') {
+            const created = await addTeamMember(member);
+            return created;
+          }
+          return handleAddTeamMember(member);
+        }}
+        onRemoveTeamMember={async (id) => {
+          if (typeof removeTeamMember === 'function') {
+            const ok = await removeTeamMember(id);
+            return ok;
+          }
+          return handleRemoveTeamMember(id);
+        }}
+        teamMembers={teamMembers}
         // تمرير دوال CRUD كـ props
         updateProject={updateProject}
         addCategory={addCategory}
@@ -78,6 +120,9 @@ function ProjectDashboard({
         addMilestone={addMilestone}
         removeMilestone={removeMilestone}
         updateMilestone={updateMilestone}
+              addDeliverable={addDeliverable}
+        removeDeliverable={removeDeliverable}
+        updateDeliverable={updateDeliverable}
       />
     </div>
   );

@@ -27,16 +27,26 @@ export default function ProjectSections({
   projectId,
   language = "ar",
   project,
+  clients = [],
   payments = project?.payments || [],
   milestones = project?.milestones || [],
   categories = project?.categories || [],
-  deliverables = project?.deliverables || [],
+  deliverables,
   team = project?.team || [],
   files = project?.files || [],
   onUpdateTeamMember,
+  onAddTeamMember,
+  onRemoveTeamMember,
+  teamMembers = [],
   addPayment,
   removePayment,
   updatePayment,
+  addDeliverable,
+  removeDeliverable,
+  updateDeliverable,
+  addMilestone,
+  updateMilestone,
+  removeMilestone,
 }) {
   const isAr = language === "ar";
   const T = (ar, en) => (isAr ? ar : en);
@@ -54,7 +64,10 @@ export default function ProjectSections({
 
   const TabButton = ({ id, label, Icon }) => (
     <button
-      onClick={() => setActive(id)}
+      onClick={() => {
+        console.log(`TabButton clicked: ${id}`);
+        setActive(id);
+      }}
       className={`relative px-4 py-2 rounded-xl border text-sm font-medium transition-all
         ${active === id
           ? "bg-emerald-50 border-emerald-200 text-emerald-700"
@@ -225,17 +238,29 @@ export default function ProjectSections({
 
         {/* ====== MILESTONES ====== */}
         {active === "milestones" && (
-          <MilestonesPanel items={milestones} />
+          <MilestonesPanel
+            items={milestones}
+            onAdd={addMilestone}
+            onUpdate={updateMilestone}
+            onRemove={removeMilestone}
+            deliverables={deliverables}
+          />
         )}
 
         {/* ====== DELIVERABLES ====== */}
         {active === "deliverables" && (
-          <DeliverablesPanel items={deliverables} />
+          <DeliverablesPanel 
+            items={deliverables}
+            onAdd={addDeliverable}
+            onUpdate={updateDeliverable}
+            onRemove={removeDeliverable}
+            teamMembers={teamMembers}
+          />
         )}
 
         {/* ====== TEAM ====== */}
         {active === "team" && (
-          <TeamPanel items={team} onUpdate={onUpdateTeamMember} />
+          <TeamPanel items={(teamMembers && teamMembers.length) ? teamMembers : team} onAdd={onAddTeamMember} onUpdate={onUpdateTeamMember} onRemove={onRemoveTeamMember} candidates={teamMembers || clients || []} />
         )}
 
         {/* ====== FILES ====== */}

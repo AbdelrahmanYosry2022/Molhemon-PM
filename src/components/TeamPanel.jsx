@@ -65,7 +65,7 @@ function toCSV(rows) {
     .join("\n");
 }
 
-function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
+function TeamPanel({ items = [], onAdd, onUpdate, onRemove, candidates = [] }) {
   // استخدام الداتا الحقيقية من props
   const demo = useMemo(() => items, [items]);
 
@@ -144,7 +144,22 @@ function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
       const url = await uploadTeamAvatar(editing.avatar, editing.id || crypto.randomUUID());
       payload.avatar_url = url;
     }
-    editing.id ? onUpdate?.(editing.id, payload) : onAdd?.(payload);
+    // Remove UI-only temporary keys (prefixed with _)
+    Object.keys(payload).forEach((k) => {
+      if (k.startsWith('_')) delete payload[k];
+    });
+    // Remove any File objects (they shouldn't be sent directly)
+    if (payload.avatar && payload.avatar instanceof File) delete payload.avatar;
+
+    // Call provided handlers (log payload for debugging)
+    console.debug('TeamPanel.saveEdit -> payload:', payload);
+    if (editing.id) {
+      console.debug('TeamPanel.saveEdit -> updating id', editing.id);
+      onUpdate?.(editing.id, payload);
+    } else {
+      console.debug('TeamPanel.saveEdit -> adding new member');
+      onAdd?.(payload);
+    }
     closeEdit();
   };
   const removeRow = (id) => onRemove?.(id);
@@ -216,8 +231,9 @@ function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
               onClick={openInvite}
               className="px-3 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 inline-flex items-center gap-1"
             >
-              <MailPlus size={16} /> دعوة عضو
+              <MailPlus size={16} /> اضافة عضو
             </button>
+            
           </div>
         </div>
       </div>
@@ -357,6 +373,7 @@ function TeamPanel({ items = [], onAdd, onUpdate, onRemove }) {
             if (editing.id) removeRow?.(editing.id);
             closeEdit();
           }}
+          candidates={candidates}
         />
       )}
     </>

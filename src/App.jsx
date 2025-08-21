@@ -11,6 +11,8 @@ import AppSidebar from './components/AppSidebar.jsx';
 import ProjectDashboard from './components/ProjectDashboard.jsx';
 import ClientsDatabase from './components/ClientsDatabase.jsx';
 import AddProjectModal from './components/AddProjectModal.jsx';
+import EditProjectModal from './components/EditProjectModal.jsx';
+import ConfirmDeleteModal from './components/ConfirmDeleteModal.jsx';
 
 // نظام الترجمة للتطبيق الرئيسي
 const appTranslations = {
@@ -48,15 +50,22 @@ export default function App() {
 
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
   const [activeId, setActiveId] = useState(null);
 
   const [categories, setCategories] = useState([]);
   const [payments, setPayments] = useState([]);
   const [milestones, setMilestones] = useState([]);
+  const [deliverables, setDeliverables] = useState([]);
 
-  // Add Project Modal state
+  // Modals state
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
+  const [itemsToRemove, setItemsToRemove] = useState([]);
 
   // حفظ اللغة في localStorage
   useEffect(() => {
@@ -87,10 +96,12 @@ export default function App() {
       setErrorMsg("");
       const [
         { data: projectsData, error: projectsError },
-        { data: clientsData, error: clientsError }
+        { data: clientsData, error: clientsError },
+        { data: teamMembersData, error: teamMembersError }
       ] = await Promise.all([
         supabase.from('projects').select('*'),
-        supabase.from('clients').select('*')
+        supabase.from('clients').select('*'),
+        supabase.from('team_members').select('*')
       ]);
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
@@ -110,6 +121,11 @@ export default function App() {
         console.error('Error fetching clients:', clientsError);
       } else {
         setClients(clientsData || []);
+      }
+      if (teamMembersError) {
+        console.warn('Error fetching team_members:', teamMembersError);
+      } else {
+        setTeamMembers(teamMembersData || []);
       }
       setLoading(false);
     } catch (error) {
@@ -135,19 +151,31 @@ export default function App() {
       const [
         { data: categoriesData, error: catError }, 
         { data: paymentsData, error: payError }, 
-        { data: milestonesData, error: mileError }
+        { data: milestonesData, error: mileError },
+        { data: deliverablesData, error: delivError }
       ] = await Promise.all([
         supabase.from('categories').select('*').eq('project_id', activeId),
         supabase.from('payments').select('*').eq('project_id', activeId),
-        supabase.from('milestones').select('*').eq('project_id', activeId)
+        supabase.from('milestones').select('*').eq('project_id', activeId),
+        supabase.from('deliverables').select('*').eq('project_id', activeId)
       ]);
 
       if (catError) console.error('Error fetching categories:', catError);
       if (payError) console.error('Error fetching payments:', payError);
       if (mileError) console.error('Error fetching milestones:', mileError);
+      if (delivError) console.error('Error fetching deliverables:', delivError);
 
       setCategories(categoriesData || []);
       setMilestones(milestonesData || []);
+      setDeliverables(deliverablesData || []);
+      // fetch team members for the active project
+      try {
+        const { data: tmData, error: tmErr } = await supabase.from('team_members').select('*').eq('project_id', activeId);
+        if (tmErr) console.warn('Error fetching team_members for project:', tmErr);
+        else setTeamMembers(tmData || []);
+      } catch (err) {
+        console.warn('Failed to fetch team_members:', err);
+      }
       
       if (paymentsData && categoriesData) {
         const categoryMap = new Map(categoriesData.map(c => [c.id, c.name]));
@@ -200,15 +228,73 @@ export default function App() {
     setShowAddProjectModal(false);
   };
 
-  const deleteProject = async () => {
-    if (!project || !project.id) return;
-    const { error } = await supabase.from('projects').delete().eq('id', project.id);
+  const deleteProject = async (id) => {
+    const projectId = id || project.id;
+    if (!projectId) return;
+    const { error } = await supabase.from('projects').delete().eq('id', projectId);
     if (error) console.error("Error deleting project:", error);
     else {
-        const remainingProjects = projects.filter(p => p.id !== project.id);
+        const remainingProjects = projects.filter(p => p.id !== projectId);
         setProjects(remainingProjects);
-        setActiveId(remainingProjects.length > 0 ? remainingProjects[0].id : null);
+        if (activeId === projectId) {
+          setActiveId(remainingProjects.length > 0 ? remainingProjects[0].id : null);
+        }
     }
+  };
+
+  // Open confirm delete flow (shows modal asking to type project name)
+  const openConfirmDelete = (proj, items = null) => {
+    setProjectToDelete(proj);
+    // default list of affected tables/items (Arabic strings for clarity)
+    const defaults = [
+      'المدفوعات (payments)',
+      'المعالم (milestones)',
+      'المخرجات (deliverables)',
+      'بنود الميزانية / الفئات (categories)',
+      'خصائص المشروع (project_attributes)',
+      'الملفات والوسائط في تخزين Supabase (مثلاً: project-images bucket)'
+    ];
+    setItemsToRemove(Array.isArray(items) ? items : defaults);
+    setShowConfirmDelete(true);
+  };
+
+  const handleCancelDelete = () => {
+    setProjectToDelete(null);
+    setShowConfirmDelete(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+    try {
+      // best-effort: write a deletion log
+      const user = await supabase.auth.getUser();
+      const userId = user?.data?.user?.id || null;
+      const log = {
+        project_id: projectToDelete.id,
+        project_name: projectToDelete.name,
+        deleted_by: userId,
+        deleted_at: new Date().toISOString()
+      };
+      const { error: logErr } = await supabase.from('deletion_logs').insert([log]);
+      if (logErr) console.warn('Failed to write deletion log:', logErr);
+    } catch (err) {
+      console.warn('Deletion log attempt failed:', err);
+    }
+    await deleteProject(projectToDelete.id);
+    setProjectToDelete(null);
+    setShowConfirmDelete(false);
+  };
+
+  const openEditModal = (projectToEdit) => {
+    setEditingProject(projectToEdit);
+    setShowEditProjectModal(true);
+  };
+
+  const handleProjectUpdated = (updatedProject) => {
+    const formattedProject = { ...updatedProject, start: updatedProject.start_date, end: updatedProject.end_date };
+    setProjects(ps => ps.map(p => p.id === updatedProject.id ? formattedProject : p));
+    setShowEditProjectModal(false);
+    setEditingProject(null);
   };
 
   // --- Payment CRUD ---
@@ -306,6 +392,58 @@ export default function App() {
     const { data, error } = await supabase.from('milestones').update(patch).eq('id', id).select().single();
     if (error) console.error('Error updating milestone:', error);
     else if (data) setMilestones(arr => arr.map(it => it.id === id ? data : it));
+  };
+
+  // --- Deliverable CRUD ---
+  const addDeliverable = async (newDeliverable) => {
+    console.log('Attempting to add new deliverable:', newDeliverable);
+    const payload = { ...newDeliverable, project_id: project.id };
+
+    // Remove 'id' from payload for new insertions, as Supabase will generate it
+    delete payload.id;
+
+    // Remove 'due' if it's an empty string to avoid Supabase date parsing errors
+    if (payload.due === "") {
+      delete payload.due;
+    }
+
+    // Ensure a default type exists (in case the UI didn't send one)
+    if (!payload.type) {
+      payload.type = 'podcast';
+    }
+
+  // Strip owner_id if present — the deliverables table doesn't have this column
+  if ('owner_id' in payload) delete payload.owner_id;
+
+    const { data, error } = await supabase.from('deliverables').insert(payload).select().single();
+    
+    if (error) {
+      console.error('Error adding deliverable:', error);
+      // Optionally, you could set an error message state here to display to the user
+      // setErrorMsg(`Failed to add deliverable: ${error.message}`);
+    } else if (data) {
+      console.log('Deliverable added successfully:', data);
+      setDeliverables(d => [...d, data]);
+    }
+  };
+
+  const removeDeliverable = async (id) => {
+    const { error } = await supabase.from('deliverables').delete().eq('id', id);
+    if (error) console.error('Error removing deliverable:', error);
+    else setDeliverables(d => d.filter(deliverable => deliverable.id !== id));
+  };
+
+  const updateDeliverable = async (id, patch) => {
+  const dbPatch = { ...patch };
+  // Clean empty strings that would otherwise overwrite DB columns with invalid values
+  if (dbPatch.due === "") delete dbPatch.due;
+  if (dbPatch.type === "") delete dbPatch.type;
+  // Remove owner_id if present — deliverables table doesn't include this column
+  if ('owner_id' in dbPatch) delete dbPatch.owner_id;
+
+  const { data, error } = await supabase.from('deliverables').update(dbPatch).eq('id', id).select().single();
+    if (error) console.error('Error updating deliverable:', error);
+    else if (data) setDeliverables(arr => arr.map(it => it.id === id ? data : it));
   };
 
   // --- Category CRUD ---
@@ -466,10 +604,12 @@ export default function App() {
             setActiveId={setActiveId}
             addProject={addProject}
             deleteProject={deleteProject}
+            openConfirmDelete={openConfirmDelete}
             activeProject={activeProject}
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
             language={language}
+            openEditModal={openEditModal}
           />
 
           <main className="flex-grow p-6 overflow-y-auto">
@@ -502,8 +642,89 @@ export default function App() {
                 addMilestone={addMilestone}
                 removeMilestone={removeMilestone}
                 updateMilestone={updateMilestone}
+                deliverables={deliverables}
+                addDeliverable={addDeliverable}
+                removeDeliverable={removeDeliverable}
+                updateDeliverable={updateDeliverable}
                 language={language}
                 clients={clients}
+                teamMembers={teamMembers}
+                addTeamMember={async (member) => {
+                  try {
+                    const projectId = activeProject?.id || activeId;
+                    // sanitize payload: only send allowed columns to PostgREST
+                    const allowed = ['project_id', 'name', 'role', 'status', 'joined', 'email', 'phone', 'avatar_url'];
+                    const raw = { ...member, project_id: projectId };
+                    Object.keys(raw).forEach(k => { if (k.startsWith('_')) delete raw[k]; });
+                    // ensure we never send an 'avatar' key (frontend may include a File or temp field)
+                    if ('avatar' in raw) delete raw.avatar;
+                    const insertPayload = {};
+                    allowed.forEach(k => {
+                      if (raw[k] !== undefined) insertPayload[k] = raw[k];
+                    });
+                    console.debug('App.addTeamMember -> inserting payload:', insertPayload);
+                    const { data, error } = await supabase.from('team_members').insert(insertPayload).select().single();
+                    if (error) {
+                      console.error('Error inserting team_member:', error);
+                      return null;
+                    }
+                    // update local teamMembers list
+                    setTeamMembers(tm => [...tm, data]);
+                    // also update the project's team field locally to keep UI in sync
+                    setProjects(ps => ps.map(p => p.id === projectId ? { ...p, team: [...(p.team || []), data] } : p));
+                    // NOTE: intentionally not persisting `projects.team` to DB here because
+                    // it can fail if the column doesn't exist or RLS blocks the update.
+                    // Use `team_members` table as source-of-truth for persistence.
+                    return data;
+                  } catch (err) {
+                    console.error('addTeamMember failed:', err);
+                    return null;
+                  }
+                }}
+                updateTeamMember={async (id, patch) => {
+                  try {
+                    // sanitize patch to allowed DB columns only
+                    const allowedUpd = ['name', 'role', 'status', 'joined', 'email', 'phone', 'avatar_url'];
+                    const rawPatch = { ...patch };
+                    Object.keys(rawPatch).forEach(k => { if (k.startsWith('_')) delete rawPatch[k]; });
+                    if ('avatar' in rawPatch) delete rawPatch.avatar;
+                    const dbPatch = {};
+                    allowedUpd.forEach(k => { if (rawPatch[k] !== undefined) dbPatch[k] = rawPatch[k]; });
+                    console.debug('App.updateTeamMember -> patch:', dbPatch);
+                    const { data, error } = await supabase.from('team_members').update(dbPatch).eq('id', id).select().single();
+                    if (error) {
+                      console.error('Error updating team_member:', error);
+                      return null;
+                    }
+                    setTeamMembers(tm => tm.map(t => t.id === id ? data : t));
+                    // also sync into projects.team locally to keep UI consistent
+                    setProjects(ps => ps.map(p => p.id === (activeProject?.id || activeId) ? { ...p, team: (p.team || []).map(m => m.id === id ? data : m) } : p));
+                    // NOTE: skipping remote update of projects.team for the same reasons described above.
+                    return data;
+                  } catch (err) {
+                    console.error('updateTeamMember failed:', err);
+                    return null;
+                  }
+                }}
+                removeTeamMember={async (id) => {
+                  try {
+                    console.debug('App.removeTeamMember -> deleting id:', id);
+                    const { error } = await supabase.from('team_members').delete().eq('id', id);
+                    if (error) {
+                      console.error('Error deleting team_member:', error);
+                      return false;
+                    }
+                    setTeamMembers(tm => tm.filter(t => t.id !== id));
+                    // remove from project's team field locally to keep UI consistent
+                    const projId = activeProject?.id || activeId;
+                    setProjects(ps => ps.map(p => p.id === projId ? { ...p, team: (p.team || []).filter(m => m.id !== id) } : p));
+                    // NOTE: not persisting the removal to projects table; use team_members table as source-of-truth.
+                    return true;
+                  } catch (err) {
+                    console.error('removeTeamMember failed:', err);
+                    return false;
+                  }
+                }}
               />
             ) : (
               <div className={`h-full w-full flex flex-col items-center justify-center text-center text-[${colors.textSubtle}] bg-[${colors.background}] rounded-xl border`}>
@@ -527,6 +748,22 @@ export default function App() {
             clients={clients}
           />
         )}
+
+        {showEditProjectModal && (
+          <EditProjectModal
+            onClose={() => setShowEditProjectModal(false)}
+            onProjectUpdated={handleProjectUpdated}
+            project={editingProject}
+            clients={clients}
+          />
+        )}
+        <ConfirmDeleteModal
+          open={showConfirmDelete}
+          projectName={projectToDelete?.name}
+          itemsToRemove={itemsToRemove}
+          onCancel={handleCancelDelete}
+          onConfirm={handleConfirmDelete}
+        />
       </>
     );
   }

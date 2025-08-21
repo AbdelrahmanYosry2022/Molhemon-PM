@@ -13,7 +13,7 @@ import { Shield, Trash2 } from "lucide-react";
  * - onSave: () => void
  * - onDelete: () => void         // يظهر الزر فقط عند وجود id
  */
-export default function EditMemberModal({ value, onChange, onCancel, onSave, onDelete }) {
+export default function EditMemberModal({ value, onChange, onCancel, onSave, onDelete, candidates = [] }) {
   const v = value || {};
   const dialogRef = useRef(null);
 
@@ -67,29 +67,43 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
               id="avatar-input-modal"
               accept="image/*"
               style={{ display: 'none' }}
-              onChange={async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  // رفع الصورة وتحديث الرابط
-                  if (v.id && window.uploadTeamAvatar) {
-                    const url = await window.uploadTeamAvatar(file, v.id);
-                    onChange((s) => ({ ...s, avatar_url: url }));
-                  } else {
-                    // في حالة الإضافة الجديدة، نخزن الملف مؤقتًا
+              onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    // Always store the File object on state; parent will upload if needed
                     onChange((s) => ({ ...s, avatar: file }));
                   }
-                }
-              }}
+                }}
             />
           </div>
 
-          {/* Name */}
+          {/* Candidate selector (optional) + Name */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1">الاسم</label>
+            <label className="block text-xs text-gray-500 mb-1">العضو (اختر من القاعدة أو أدخل اسمًا جديدًا)</label>
+            {candidates && candidates.length > 0 ? (
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right mb-2"
+                value={v._candidate_id || ""}
+                onChange={(e) => {
+                  const cid = e.target.value;
+                  if (!cid) return onChange((s) => ({ ...s, _candidate_id: "", name: "", email: "", phone: "", avatar_url: "" }));
+                  const sel = candidates.find(c => String(c.id) === String(cid));
+                  if (sel) {
+                    onChange((s) => ({ ...s, _candidate_id: cid, name: sel.name || (sel.first_name ? `${sel.first_name} ${sel.last_name||''}`.trim() : ''), email: sel.email || '', phone: sel.phone || '', avatar_url: sel.avatar_url || sel.avatar || '' }));
+                  }
+                }}
+              >
+                <option value="">-- اختر عضو من القائمة --</option>
+                {candidates.map(c => (
+                  <option key={c.id} value={c.id}>{c.first_name ? `${c.first_name} ${c.last_name||''}`.trim() : c.name || c.email || c.id}</option>
+                ))}
+              </select>
+            ) : null}
+
             <input
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
               value={v.name || ""}
-              onChange={(e) => onChange((s) => ({ ...s, name: e.target.value }))}
+              onChange={(e) => onChange((s) => ({ ...s, name: e.target.value, _candidate_id: "" }))}
               placeholder="اسم العضو"
             />
           </div>
