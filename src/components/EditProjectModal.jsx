@@ -1,5 +1,6 @@
 // src/components/EditProjectModal.jsx
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { supabase } from '../supabaseClient';
 
 function EditProjectModal({ onClose, onProjectUpdated, project, clients }) {
@@ -38,6 +39,13 @@ function EditProjectModal({ onClose, onProjectUpdated, project, clients }) {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleClientChange = (option) => {
+    setFormData(prev => ({
+      ...prev,
+      client_id: option ? option.value : ''
     }));
   };
 
@@ -182,6 +190,10 @@ function EditProjectModal({ onClose, onProjectUpdated, project, clients }) {
     }
   };
 
+  const clientOptions = clients
+    .sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''))
+    .map(c => ({ value: c.id, label: `${c.first_name || ''} ${c.last_name || ''}`.trim() }));
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -244,12 +256,16 @@ function EditProjectModal({ onClose, onProjectUpdated, project, clients }) {
 
             <div className="mt-4">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="client_id">العميل</label>
-              <select id="client_id" name="client_id" value={formData.client_id} onChange={handleInputChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <option value="">اختر عميل</option>
-                {clients.map(client => (
-                  <option key={client.id} value={client.id}>{client.first_name} {client.last_name}</option>
-                ))}
-              </select>
+              <Select
+                id="client_id"
+                name="client_id"
+                options={clientOptions}
+                value={clientOptions.find(c => c.value === formData.client_id)}
+                onChange={handleClientChange}
+                isClearable
+                isSearchable
+                placeholder="ابحث عن عميل أو اختر..."
+              />
             </div>
 
             <div className="mt-4">

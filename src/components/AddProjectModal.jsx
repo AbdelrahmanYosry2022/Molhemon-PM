@@ -1,5 +1,6 @@
 // src/components/AddProjectModal.jsx
 import React, { useState } from 'react';
+import Select from 'react-select';
 import { supabase } from '../supabaseClient';
 
 /**
@@ -29,7 +30,7 @@ function AddProjectModal({ onClose, onProjectAdded, clients = [] }) {
   const parseList = (s) => {
     if (!s) return [];
     return s
-      .split(/\n|;|,/) // newline, semicolon or comma
+      .split(/\n|;|,/)
       .map(x => x.trim())
       .filter(Boolean);
   };
@@ -61,16 +62,18 @@ function AddProjectModal({ onClose, onProjectAdded, clients = [] }) {
 
       // insert attributes (best-effort)
       try {
-        await supabase.from('project_attributes').insert([{ 
-          project_id: data.id,
-          client_name: clients.find(c => c.id === data.client_id)?.first_name || 'عميل غير محدد',
-          service: 'General',
-          status: 'قيد التنفيذ',
-          description: description || null,
-          currency: currency || 'EGP',
-          deliverables: parseList(deliverablesText),
-          team: parseTeam(teamText)
-        }]);
+        await supabase.from('project_attributes').insert([
+          {
+            project_id: data.id,
+            client_name: clients.find(c => c.id === data.client_id)?.first_name || 'عميل غير محدد',
+            service: 'General',
+            status: 'قيد التنفيذ',
+            description: description || null,
+            currency: currency || 'EGP',
+            deliverables: parseList(deliverablesText),
+            team: parseTeam(teamText)
+          }
+        ]);
       } catch (err) {
         // don't block main flow if attributes fail
         console.warn('Failed to write project_attributes:', err);
@@ -89,6 +92,9 @@ function AddProjectModal({ onClose, onProjectAdded, clients = [] }) {
   // previews
   const deliverables = parseList(deliverablesText);
   const team = parseTeam(teamText);
+  const clientOptions = clients
+    .sort((a, b) => (a.first_name || '').localeCompare(b.first_name || ''))
+    .map(c => ({ value: c.id, label: `${c.first_name || ''} ${c.last_name || ''}`.trim() }));
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
@@ -134,10 +140,14 @@ function AddProjectModal({ onClose, onProjectAdded, clients = [] }) {
 
           <div className="mt-4">
             <label className="block text-xs text-gray-600 mb-1">العميل</label>
-            <select className="w-full border rounded px-3 py-2" value={clientId} onChange={e=>setClientId(e.target.value)}>
-              <option value="">اختر عميل (اختياري)</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>)}
-            </select>
+            <Select
+              options={clientOptions}
+              onChange={option => setClientId(option ? option.value : '')}
+              isClearable
+              isSearchable
+              placeholder="ابحث عن عميل أو اختر..."
+              value={clientOptions.find(c => c.value === clientId)}
+            />
           </div>
 
           <div className="mt-4">
