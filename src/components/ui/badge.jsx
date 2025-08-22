@@ -6,7 +6,8 @@ export function Badge({ children, variant = "default", className = "", ...props 
   const variantClasses = {
     default: "bg-gray-100 text-gray-800",
     secondary: "bg-blue-100 text-blue-800",
-    outline: "border border-gray-200 text-gray-700"
+    outline: "border border-gray-200 text-gray-700",
+    destructive: "bg-red-100 text-red-800"
   };
 
   return (

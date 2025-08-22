@@ -14,6 +14,7 @@ import AddProjectModal from './components/AddProjectModal.jsx';
 import EditProjectModal from './components/EditProjectModal.jsx';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal.jsx';
 import TeamDashboard from './components/TeamDashboard.jsx';
+import FinancialDashboard from './components/FinancialDashboard.jsx';
 
 // نظام الترجمة للتطبيق الرئيسي
 const appTranslations = {
@@ -632,6 +633,8 @@ export default function App() {
       setCurrentView('clients');
     } else if (section === 'team') {
       setCurrentView('team');
+    } else if (section === 'financials') {
+      setCurrentView('financials');
     } else {
       alert(`سيتم فتح قسم: ${section}`);
     }
@@ -709,6 +712,41 @@ export default function App() {
         
         <div className={`h-screen w-screen bg-[${colors.background}] text-[${colors.textPrimary}] flex`}>
           <TeamDashboard 
+            onBack={() => setCurrentView('home')}
+            language={language}
+          />
+        </div>
+      </>
+    );
+  }
+
+  // Show Financial Dashboard
+  if (currentView === 'financials') {
+    return (
+      <>
+        <style>{`
+          /* Use the locally registered Graphik Arabic as the app font */
+          body {
+            font-family: 'Graphik Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif;
+          }
+          input, select, button {
+            font-family: inherit;
+          }
+          input[type=number] {
+            text-align: right;
+            font-feature-settings: "tnum" 1;
+          }
+          input[type="date"] {
+            direction: rtl;
+            text-align: right;
+          }
+          input[type="date"]::-webkit-datetime-edit { direction: rtl; text-align: right; }
+          input[type="date"]::-webkit-datetime-edit-fields-wrapper { direction: rtl; }
+          input[type="date"]::-webkit-datetime-edit-text { padding: 0 2px; }
+        `}</style>
+        
+        <div className={`h-screen w-screen bg-[${colors.background}] text-[${colors.textPrimary}] flex`}>
+          <FinancialDashboard 
             onBack={() => setCurrentView('home')}
             language={language}
           />
