@@ -68,8 +68,14 @@ function toCSV(rows) {
 }
 
 function TeamPanel({ items = [], onAdd, onUpdate, onRemove, candidates = [] }) {
-  // استخدام الداتا الحقيقية من props
-  const demo = useMemo(() => items, [items]);
+  // إصلاح حقل الصورة ليكون دائمًا avatar_url حتى لو كان اسمه مختلف في الداتا الأصلية
+  const fixedItems = useMemo(() => (items || []).map(m => ({
+    ...m,
+    avatar_url: m.avatar_url || m.avatar || m.photo || null,
+  })), [items]);
+
+  // استخدام الداتا الحقيقية بعد تصحيح حقول الصور
+  const demo = useMemo(() => fixedItems, [fixedItems]);
 
   // Filters
   const [q, setQ] = useState("");
@@ -408,7 +414,5 @@ function TeamPanel({ items = [], onAdd, onUpdate, onRemove, candidates = [] }) {
       )}
     </>
   );
-  
-// new comment 
-
 }
+

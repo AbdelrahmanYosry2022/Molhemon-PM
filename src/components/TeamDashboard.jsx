@@ -61,6 +61,7 @@ const TeamDashboard = ({ onBack, language }) => {
         throw error;
       }
 
+      console.log('Loaded team members:', members);
       setTeamMembers(members || []);
 
       // حساب الإحصائيات
@@ -93,15 +94,53 @@ const TeamDashboard = ({ onBack, language }) => {
   // معالجات إدارة الأعضاء
   const handleAddMember = async (memberData) => {
     try {
+      console.log('Adding member with data:', memberData);
+      
+      // تنظيف البيانات من المراجع الدائرية
+      const cleanData = { ...memberData };
+      
+      // إزالة الكائنات التي تحتوي على مراجع دائرية
+      delete cleanData.avatar;
+      delete cleanData.avatar_file;
+      
+      // التأكد من وجود البيانات المطلوبة
+      if (!cleanData.name || cleanData.name.trim() === '') {
+        console.error('Missing name in data:', cleanData);
+        throw new Error('اسم العضو مطلوب - يرجى إدخال اسم العضو');
+      }
+      
+      // رفع الصورة إذا كانت موجودة
+      let avatarUrl = null;
+      if (memberData.avatar_file) {
+        console.log('Uploading avatar file:', memberData.avatar_file.name);
+        const fileExt = memberData.avatar_file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, memberData.avatar_file);
+
+        if (uploadError) {
+          console.error('Avatar upload error:', uploadError);
+          throw uploadError;
+        }
+        // استخدام URL مباشر بدلاً من متغير البيئة
+        avatarUrl = `https://zsshxpdgbnxfuszanaeo.supabase.co/storage/v1/object/public/avatars/${fileName}`;
+        console.log('Avatar uploaded successfully:', avatarUrl);
+      } else if (memberData.avatar_url && !memberData.avatar_url.startsWith('blob:')) {
+        // إذا كان هناك avatar_url صحيح (ليس blob)، استخدمه
+        avatarUrl = memberData.avatar_url;
+        console.log('Using existing avatar URL:', avatarUrl);
+      }
+
       // الحصول على أول مشروع موجود إذا لم يتم تحديد project_id
-      if (!memberData.project_id) {
+      if (!cleanData.project_id) {
         const { data: projects } = await supabase
           .from('projects')
           .select('id')
           .limit(1);
         
         if (projects && projects.length > 0) {
-          memberData.project_id = projects[0].id;
+          cleanData.project_id = projects[0].id;
         } else {
           // إنشاء مشروع تجريبي إذا لم توجد مشاريع
           const { data: newProject, error: projectError } = await supabase
@@ -115,38 +154,110 @@ const TeamDashboard = ({ onBack, language }) => {
             .single();
           
           if (projectError) throw projectError;
-          memberData.project_id = newProject.id;
+          cleanData.project_id = newProject.id;
         }
       }
 
       // إدراج العضو في جدول أعضاء الشركة
+      const insertData = {
+        name: cleanData.name,
+        role: cleanData.role || 'member',
+        status: cleanData.status || 'active',
+        email: cleanData.email || null,
+        phone: cleanData.phone || null,
+        avatar_url: avatarUrl || null,
+        joined: cleanData.joined || new Date().toISOString().slice(0, 10),
+        project_id: cleanData.project_id || null
+      };
+      
+      console.log('Inserting member data:', insertData);
+      
       let { data, error } = await supabase
         .from('company_team_members')
-        .insert([memberData])
+        .insert([insertData])
         .select('*');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database insert error:', error);
+        throw error;
+      }
 
+      console.log('Member added successfully:', data[0]);
       setTeamMembers(prev => [data[0], ...prev]);
-      loadTeamData(); // إعادة تحميل الإحصائيات
+      // لا نحتاج لإعادة تحميل البيانات لأننا أضفنا العضو مباشرة
+      // loadTeamData(); // إعادة تحميل الإحصائيات
     } catch (error) {
       console.error('Error adding member:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
       throw error;
     }
   };
 
   const handleUpdateMember = async (id, updates) => {
     try {
+      console.log('Updating member with data:', updates);
+      
+      // تنظيف البيانات من المراجع الدائرية
+      const cleanUpdates = { ...updates };
+      
+      // إزالة الكائنات التي تحتوي على مراجع دائرية
+      delete cleanUpdates.avatar;
+      // لا نحذف avatar_file لأننا نحتاجه لرفع الصورة
+      
+      // رفع الصورة إذا كانت موجودة
+      let avatarUrl = null;
+      console.log('Checking for avatar updates. avatar_file:', updates.avatar_file, 'avatar_url:', updates.avatar_url);
+      
+      if (updates.avatar_file) {
+        console.log('Uploading new avatar file:', updates.avatar_file.name);
+        const fileExt = updates.avatar_file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, updates.avatar_file);
+
+        if (uploadError) throw uploadError;
+        // استخدام URL مباشر بدلاً من متغير البيئة
+        avatarUrl = `https://zsshxpdgbnxfuszanaeo.supabase.co/storage/v1/object/public/avatars/${fileName}`;
+        console.log('Avatar updated successfully:', avatarUrl);
+      } else if (updates.avatar_url && !updates.avatar_url.startsWith('blob:')) {
+        // إذا كان هناك avatar_url صحيح (ليس blob)، استخدمه
+        avatarUrl = updates.avatar_url;
+        console.log('Using existing avatar URL for update:', avatarUrl);
+      } else {
+        console.log('No avatar file or valid URL found, keeping existing avatar');
+      }
+      
+      // الآن نحذف avatar_file من cleanUpdates قبل الحفظ في قاعدة البيانات
+      delete cleanUpdates.avatar_file;
+
+      // إذا لم يتم تحديد avatarUrl جديد، لا نحدث avatar_url في قاعدة البيانات
+      const updateData = { ...cleanUpdates };
+      if (avatarUrl !== null) {
+        updateData.avatar_url = avatarUrl;
+      }
+
+      console.log('Updating database with:', updateData);
+
       const { error } = await supabase
         .from('company_team_members')
-        .update(updates)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
 
       setTeamMembers(prev => 
         prev.map(member => 
-          member.id === id ? { ...member, ...updates } : member
+          member.id === id ? { 
+            ...member, 
+            ...cleanUpdates, 
+            ...(avatarUrl !== null && { avatar_url: avatarUrl })
+          } : member
         )
       );
       loadTeamData(); // إعادة تحميل الإحصائيات
@@ -266,7 +377,7 @@ const TeamDashboard = ({ onBack, language }) => {
             >
               <tab.icon size={16} />
               <span>{tab.label}</span>
-            </button>
+      </button>
           ))}
         </div>
       </div>

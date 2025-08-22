@@ -68,7 +68,7 @@ const TeamMemberCard = ({
           <div className="relative">
             <Avatar className="w-12 h-12">
               <AvatarImage
-                src={member.avatar_url || member.avatar || "https://i.pravatar.cc/96?img=1"}
+                src={member.avatar_url || member.avatar}
                 alt={fullName}
                 className="object-cover"
               />
@@ -168,7 +168,11 @@ const TeamMemberCard = ({
           <div className="relative group">
             <Avatar className="w-24 h-24 border-white shadow-lg border-2">
               <AvatarImage
-                src={member.avatar_url || member.avatar || "https://i.pravatar.cc/96?img=1"} // Fallback avatar
+                src={
+                  member.avatar_url && !member.avatar_url.startsWith('blob:') 
+                    ? member.avatar_url 
+                    : (member.avatar || "https://i.pravatar.cc/96?img=1")
+                }
                 alt={fullName}
                 className="object-cover"
               />

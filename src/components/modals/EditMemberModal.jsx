@@ -17,6 +17,18 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
   const v = value || {};
   const dialogRef = useRef(null);
 
+  // دالة لتنظيف البيانات قبل الحفظ
+  const cleanDataForSave = (data) => {
+    const clean = { ...data };
+    // إزالة الكائنات التي تحتوي على مراجع دائرية
+    delete clean.avatar;
+    delete clean.avatar_file;
+    // إزالة الحقول المؤقتة
+    delete clean._showLinkInput;
+    delete clean._newLink;
+    return clean;
+  };
+
   // إغلاق بـ ESC / حفظ بـ Enter
   useEffect(() => {
     const h = (e) => {
@@ -49,7 +61,11 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
           {/* Avatar */}
           <div className="flex items-center justify-center relative mb-3">
             <img
-              src={v.avatar_url || v.avatar || "https://i.pravatar.cc/96?img=1"}
+              src={
+                v.avatar_file 
+                  ? URL.createObjectURL(v.avatar_file) 
+                  : (v.avatar_url || v.avatar || "https://i.pravatar.cc/96?img=1")
+              }
               alt="avatar"
               className="w-16 h-16 rounded-full object-cover border border-gray-200"
             />
@@ -70,8 +86,13 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
               onChange={(e) => {
                   const file = e.target.files[0];
                   if (file) {
-                    // Always store the File object on state; parent will upload if needed
-                    onChange((s) => ({ ...s, avatar: file }));
+                    // Store file info without circular references
+                    onChange((s) => ({ 
+                      ...s, 
+                      avatar_file: file,
+                      // لا نضع avatar_url هنا لأنها ستكون blob مؤقت
+                      // سيتم رفع الصورة في TeamDashboard
+                    }));
                   }
                 }}
             />
@@ -118,12 +139,12 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
           {/* Name field - for company members */}
           {!isProjectMember && (
             <div>
-              <label className="block text-xs text-gray-500 mb-1">الاسم</label>
+              <label className="block text-xs text-gray-500 mb-1">الاسم *</label>
               <input
                 type="text"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
                 value={v.name || ""}
-                onChange={(e) => onChange((s) => ({ ...s, name: e.target.value }))}
+                      onChange={(e) => onChange((s) => ({ ...s, name: e.target.value }))}
                 placeholder="اسم العضو"
                 required
               />
@@ -269,21 +290,21 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
         {/* Actions */}
         <div className="mt-4 flex gap-2 justify-start">
           <button
-            onClick={onSave}
+            onClick={() => onSave(v)}
             className="px-3 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 inline-flex items-center gap-1"
           >
             <Shield size={16} /> حفظ
           </button>
           {v.id && (
             <button
-              onClick={onDelete}
+              onClick={() => onDelete(v.id)}
               className="px-3 py-2 text-sm rounded-lg bg-red-50 text-red-700 hover:bg-red-100 inline-flex items-center gap-1"
             >
               <Trash2 size={16} /> حذف
             </button>
           )}
           <button
-            onClick={onCancel}
+            onClick={() => onCancel()}
             className="px-3 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200"
           >
             إلغاء

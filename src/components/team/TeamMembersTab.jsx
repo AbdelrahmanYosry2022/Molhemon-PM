@@ -16,7 +16,7 @@ const TeamMembersTab = ({ teamMembers, onAdd, onUpdate, onRemove, language }) =>
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid');
   const [editingMember, setEditingMember] = useState(null);
 
   const t = language === 'ar' ? {
@@ -59,9 +59,17 @@ const TeamMembersTab = ({ teamMembers, onAdd, onUpdate, onRemove, language }) =>
     delete: 'Delete'
   };
 
+  // توحيد صورة الأعضاء: avatar_url
+  const fixedMembers = (teamMembers || []).map(m => ({
+    ...m,
+    avatar_url: m.avatar_url && !m.avatar_url.startsWith('blob:') 
+      ? m.avatar_url 
+      : (m.avatar || m.photo || null),
+  }));
+
   // فلترة الأعضاء
   const filteredMembers = useMemo(() => {
-    return teamMembers.filter(member => {
+    return fixedMembers.filter(member => {
       const matchesSearch = !searchQuery || 
         member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,7 +80,7 @@ const TeamMembersTab = ({ teamMembers, onAdd, onUpdate, onRemove, language }) =>
       
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [teamMembers, searchQuery, roleFilter, statusFilter]);
+  }, [fixedMembers, searchQuery, roleFilter, statusFilter]);
 
   // إحصائيات سريعة
   const stats = useMemo(() => {
@@ -119,27 +127,51 @@ const TeamMembersTab = ({ teamMembers, onAdd, onUpdate, onRemove, language }) =>
       phone: '',
       joined: new Date().toISOString().slice(0, 10),
       avatar: null,
-      project_id: null // سيتم تحديده تلقائياً في handleAddMember
+      project_id: null
     });
   };
 
   // فتح مودال تعديل عضو
   const openEditModal = (member) => {
-    setEditingMember({ ...member });
+    // تنظيف البيانات من blob URLs
+    const cleanMember = { ...member };
+    if (cleanMember.avatar_url && cleanMember.avatar_url.startsWith('blob:')) {
+      delete cleanMember.avatar_url;
+    }
+    setEditingMember(cleanMember);
   };
 
   // حفظ العضو
   const handleSaveMember = async (memberData) => {
     try {
+      console.log('Saving member data:', memberData);
+      
+      // تنظيف البيانات من المراجع الدائرية
+      const cleanData = { ...memberData };
+      delete cleanData.avatar;
+      // لا نحذف avatar_file لأننا نحتاجه للتحديث
+      delete cleanData._showLinkInput;
+      delete cleanData._newLink;
+      
+      console.log('Cleaned data for save:', cleanData);
+      
+      // التحقق من البيانات المطلوبة
+      if (!cleanData.name || cleanData.name.trim() === '') {
+        alert('يرجى إدخال اسم العضو');
+        return;
+      }
+      
       if (editingMember.id) {
-        await onUpdate(editingMember.id, memberData);
+        console.log('Updating member:', editingMember.id, 'with data:', cleanData);
+        await onUpdate(editingMember.id, cleanData);
       } else {
-        await onAdd(memberData);
+        console.log('Adding new member with data:', cleanData);
+        await onAdd(cleanData);
       }
       setEditingMember(null);
     } catch (error) {
       console.error('Error saving member:', error);
-      alert('حدث خطأ أثناء حفظ العضو');
+      alert(`حدث خطأ أثناء حفظ العضو: ${error.message}`);
     }
   };
 
@@ -303,3 +335,4 @@ const TeamMembersTab = ({ teamMembers, onAdd, onUpdate, onRemove, language }) =>
 };
 
 export default TeamMembersTab;
+
