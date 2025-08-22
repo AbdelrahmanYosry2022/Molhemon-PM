@@ -10,16 +10,20 @@ import {
   Briefcase,
   Receipt,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Users2
 } from 'lucide-react';
+import { Badge } from './ui/badge';
 
 const ICON_PALETTE = {
   projects: 'text-emerald-600',
+  team: 'text-indigo-600',
   clients: 'text-blue-600',
   documents: 'text-purple-600',
   reports: 'text-orange-600',
   calendar: 'text-cyan-600',
-  invoices: 'text-green-600'
+  invoices: 'text-green-600',
+  financials: 'text-pink-600'
 };
 
 const HomePage = ({ onNavigate, language = 'ar' }) => {
@@ -32,86 +36,98 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
       title: 'إدارة المشاريع',
       subtitle: 'تنظيم وتنفيذ المشاريع من البداية إلى النهاية. متابعة المهام، المواعيد، والميزانيات بدقة.',
       icon: LayoutDashboard,
-      delay: 0.05
+      delay: 0.05,
+      status: 'new'
+    },
+    {
+      id: 'team',
+      title: 'إدارة فريق العمل',
+      subtitle: 'إدارة أعضاء الفريق وتوزيع المهام وتتبع الأداء.',
+      icon: Users2,
+      delay: 0.1,
+      status: 'new'
     },
     {
       id: 'clients',
       title: 'قاعدة بيانات العملاء',
       subtitle: 'تخزين ومتابعة معلومات العملاء والعقود. سجل تواصل وسجل تعاملات كامل.',
       icon: Users,
-      delay: 0.1
+      delay: 0.15,
+      status: 'soon'
+    },
+    {
+      id: 'financials',
+      title: 'الحسابات المالية',
+      subtitle: 'إدارة الأمور المالية المتعلقة بالمشاريع والعملاء.',
+      icon: Briefcase,
+      delay: 0.2,
+      status: 'soon'
     },
     {
       id: 'documents',
       title: 'المستندات والعقود',
       subtitle: 'رفع وتنظيم المستندات والقوالب. إدارة صلاحيات الوصول والبحث السريع.',
       icon: FileText,
-      delay: 0.15
+      delay: 0.25,
+      status: 'soon'
     },
     {
       id: 'reports',
       title: 'التقارير والإحصائيات',
       subtitle: 'تقارير مفصلة ومرئية عن الأداء والميزانيات. أدوات تصدير ومشاركة مبسطة.',
       icon: BarChart3,
-      delay: 0.2
+      delay: 0.3,
+      status: 'soon'
     },
-    {
-      id: 'calendar',
-      title: 'التقويم والمواعيد',
-      subtitle: 'جدولة المهام والاجتماعات بسهولة. تزامن المواعيد والتنبيهات الذكية.',
-      icon: Calendar,
-      delay: 0.25
-    },
-    {
-      id: 'invoices',
-      title: 'الفواتير والمدفوعات',
-      subtitle: 'إصدار الفواتير وتتبع المدفوعات. سجلات مالية ومُلخصات قابلة للتصدير.',
-      icon: Receipt,
-      delay: 0.3
-    }
   ] : [
     {
       id: 'projects',
       title: 'Project Management',
       subtitle: 'Plan and execute projects from start to finish. Track tasks, timelines, and budgets.',
       icon: LayoutDashboard,
-      delay: 0.05
+      delay: 0.05,
+      status: 'new'
+    },
+    {
+      id: 'team',
+      title: 'Team Management',
+      subtitle: 'Manage team members, assign tasks, and track performance.',
+      icon: Users2,
+      delay: 0.1,
+      status: 'new'
     },
     {
       id: 'clients',
       title: 'Clients Database',
       subtitle: 'Store and manage client records and contracts. Centralized contact and activity log.',
       icon: Users,
-      delay: 0.1
+      delay: 0.15,
+      status: 'soon'
+    },
+    {
+      id: 'financials',
+      title: 'Financial Accounts',
+      subtitle: 'Manage financials related to projects and clients.',
+      icon: Briefcase,
+      delay: 0.2,
+      status: 'soon'
     },
     {
       id: 'documents',
       title: 'Documents & Contracts',
       subtitle: 'Upload and organize files and templates. Manage access and quick search.',
       icon: FileText,
-      delay: 0.15
+      delay: 0.25,
+      status: 'soon'
     },
     {
       id: 'reports',
       title: 'Reports & Analytics',
       subtitle: 'Detailed visual reports on performance and budgets. Easy export and sharing.',
       icon: BarChart3,
-      delay: 0.2
+      delay: 0.3,
+      status: 'soon'
     },
-    {
-      id: 'calendar',
-      title: 'Calendar & Appointments',
-      subtitle: 'Schedule tasks and meetings with reminders. Sync across devices.',
-      icon: Calendar,
-      delay: 0.25
-    },
-    {
-      id: 'invoices',
-      title: 'Invoices & Payments',
-      subtitle: 'Create invoices and track payments. Financial logs and exportable summaries.',
-      icon: Receipt,
-      delay: 0.3
-    }
   ];
 
   const welcomeText = language === 'ar' ? 'مرحبًا بك في لوحة التحكم' : 'Welcome to the Dashboard';
@@ -152,20 +168,28 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
               >
                 <div
                   onClick={() => onNavigate && onNavigate(item.id)}
-                  className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer bg-white border border-gray-100 text-gray-800 transition-transform ${hoveredCard === item.id ? 'scale-105 shadow-lg' : 'shadow-sm'}`}
-                  style={{ height: '170px', display: 'flex', alignItems: 'flex-start', transitionDuration: '400ms' }}
+                  className={`relative overflow-hidden rounded-2xl p-6 cursor-pointer bg-white border border-gray-100 text-gray-800 transition-transform ${hoveredCard === item.id ? 'scale-105 shadow-lg' : 'shadow-sm'} flex flex-col justify-between`}
+                  style={{ height: '170px', transitionDuration: '400ms' }}
                 >
-                  <div style={{ width: 60 }} className="flex-shrink-0">
-                    <Icon className={`${iconColor}`} size={28} />
+                  <div className="absolute top-3 left-3">
+                    <Badge variant={item.status === 'new' ? 'secondary' : 'default'}>
+                      {language === 'ar' ? (item.status === 'new' ? 'جديد' : 'قريباً') : (item.status === 'new' ? 'New' : 'Soon')}
+                    </Badge>
                   </div>
 
-                  <div className="flex-1 pl-4 pr-2">
-                    <h3 className="text-lg font-semibold text-gray-800 truncate whitespace-nowrap">{item.title}</h3>
-                    <p className="text-sm text-gray-700 mt-2" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.25rem', maxHeight: '2.6rem' }}>{item.subtitle}</p>
+                  <div className="flex items-start pt-5">
+                    <div style={{ width: 60 }} className="flex-shrink-0">
+                      <Icon className={`${iconColor}`} size={28} />
+                    </div>
+
+                    <div className="flex-1 pl-4 pr-2">
+                      <h3 className="text-lg font-semibold text-gray-800 truncate whitespace-nowrap">{item.title}</h3>
+                      <p className="text-sm text-gray-700 mt-2" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.25rem', maxHeight: '2.6rem' }}>{item.subtitle}</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-start">
-                    <ArrowRight className="text-gray-400 mt-1" size={18} />
+                  <div className="flex justify-end items-end">
+                    <ArrowRight className="text-gray-400" size={18} />
                   </div>
                 </div>
               </div>

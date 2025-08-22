@@ -13,7 +13,7 @@ import { Shield, Trash2 } from "lucide-react";
  * - onSave: () => void
  * - onDelete: () => void         // يظهر الزر فقط عند وجود id
  */
-export default function EditMemberModal({ value, onChange, onCancel, onSave, onDelete, candidates = [] }) {
+export default function EditMemberModal({ value, onChange, onCancel, onSave, onDelete, candidates = [], isProjectMember = false }) {
   const v = value || {};
   const dialogRef = useRef(null);
 
@@ -77,62 +77,108 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
             />
           </div>
 
-          {/* Candidate selector (optional) + Name */}
+          {/* Member selector from database */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1">العضو (اختر من القاعدة أو أدخل اسمًا جديدًا)</label>
-            {candidates && candidates.length > 0 ? (
-              <select
-                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right mb-2"
-                value={v._candidate_id || ""}
-                onChange={(e) => {
-                  const cid = e.target.value;
-                  if (!cid) return onChange((s) => ({ ...s, _candidate_id: "", name: "", email: "", phone: "", avatar_url: "" }));
-                  const sel = candidates.find(c => String(c.id) === String(cid));
-                  if (sel) {
-                    onChange((s) => ({ ...s, _candidate_id: cid, name: sel.name || (sel.first_name ? `${sel.first_name} ${sel.last_name||''}`.trim() : ''), email: sel.email || '', phone: sel.phone || '', avatar_url: sel.avatar_url || sel.avatar || '' }));
-                  }
-                }}
-              >
-                <option value="">-- اختر عضو من القائمة --</option>
-                {candidates.map(c => (
-                  <option key={c.id} value={c.id}>{c.first_name ? `${c.first_name} ${c.last_name||''}`.trim() : c.name || c.email || c.id}</option>
-                ))}
-              </select>
-            ) : null}
-
-            <input
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
-              value={v.name || ""}
-              onChange={(e) => onChange((s) => ({ ...s, name: e.target.value, _candidate_id: "" }))}
-              placeholder="اسم العضو"
-            />
+            <label className="block text-xs text-gray-500 mb-1">العضو (اختر من قاعدة البيانات)</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
+              value={v._candidate_id || ""}
+              onChange={(e) => {
+                const cid = e.target.value;
+                if (!cid) return onChange((s) => ({ ...s, _candidate_id: "", name: "", email: "", phone: "", avatar_url: "" }));
+                const sel = candidates.find(c => String(c.id) === String(cid));
+                if (sel) {
+                  onChange((s) => ({ 
+                    ...s, 
+                    _candidate_id: cid, 
+                    name: sel.name || (sel.first_name ? `${sel.first_name} ${sel.last_name||''}`.trim() : ''), 
+                    email: sel.email || '', 
+                    phone: sel.phone || '', 
+                    avatar_url: sel.avatar_url || sel.avatar || '' 
+                  }));
+                }
+              }}
+              required
+            >
+              <option value="">-- اختر عضو من القائمة --</option>
+              {candidates && candidates.length > 0 ? (
+                candidates.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.first_name ? `${c.first_name} ${c.last_name||''}`.trim() : c.name || c.email || c.id}
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>لا توجد أعضاء متاحة</option>
+              )}
+            </select>
           </div>
 
           {/* Role / Status */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">الدور</label>
+              <label className="block text-xs text-gray-500 mb-1">
+                {isProjectMember ? "دور في المشروع" : "الدور"}
+              </label>
               <select
                 className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
-                value={v.role || "member"}
-                onChange={(e) => onChange((s) => ({ ...s, role: e.target.value }))}
+                value={isProjectMember ? (v.project_role || "member") : (v.role || "member")}
+                onChange={(e) => onChange((s) => ({ 
+                  ...s, 
+                  [isProjectMember ? 'project_role' : 'role']: e.target.value 
+                }))}
               >
-                <option value="manager">مدير</option>
-                <option value="lead">قائد فريق</option>
-                <option value="editor">محرر</option>
-                <option value="designer">مصمم</option>
-                <option value="member">عضو فريق</option>
+                {isProjectMember ? (
+                  <>
+                    <option value="project_manager">مدير المشروع</option>
+                    <option value="team_lead">قائد الفريق</option>
+                    <option value="designer">مصمم</option>
+                    <option value="developer">مطور</option>
+                    <option value="editor">محرر</option>
+                    <option value="animator">رسام متحرك</option>
+                    <option value="video_editor">مونتير فيديو</option>
+                    <option value="audio_engineer">مهندس صوت</option>
+                    <option value="copywriter">كاتب محتوى</option>
+                    <option value="researcher">باحث</option>
+                    <option value="tester">مختبر</option>
+                    <option value="member">عضو فريق</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="manager">مدير</option>
+                    <option value="lead">قائد فريق</option>
+                    <option value="editor">محرر</option>
+                    <option value="designer">مصمم</option>
+                    <option value="member">عضو فريق</option>
+                  </>
+                )}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">الحالة</label>
+              <label className="block text-xs text-gray-500 mb-1">
+                {isProjectMember ? "حالة في المشروع" : "الحالة"}
+              </label>
               <select
                 className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
-                value={v.status || "active"}
-                onChange={(e) => onChange((s) => ({ ...s, status: e.target.value }))}
+                value={isProjectMember ? (v.project_status || "active") : (v.status || "active")}
+                onChange={(e) => onChange((s) => ({ 
+                  ...s, 
+                  [isProjectMember ? 'project_status' : 'status']: e.target.value 
+                }))}
               >
-                <option value="active">نشط</option>
-                <option value="inactive">غير نشط</option>
+                {isProjectMember ? (
+                  <>
+                    <option value="active">نشط</option>
+                    <option value="inactive">غير نشط</option>
+                    <option value="completed">مكتمل</option>
+                    <option value="on_leave">في إجازة</option>
+                    <option value="replaced">مستبدل</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="active">نشط</option>
+                    <option value="inactive">غير نشط</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -140,12 +186,17 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
           {/* Joined / Phone */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">تاريخ الانضمام</label>
+              <label className="block text-xs text-gray-500 mb-1">
+                {isProjectMember ? "تاريخ انضمام المشروع" : "تاريخ الانضمام"}
+              </label>
               <input
                 type="date"
                 className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
-                value={v.joined || ""}
-                onChange={(e) => onChange((s) => ({ ...s, joined: e.target.value }))}
+                value={isProjectMember ? (v.joined_project_date || "") : (v.joined || "")}
+                onChange={(e) => onChange((s) => ({ 
+                  ...s, 
+                  [isProjectMember ? 'joined_project_date' : 'joined']: e.target.value 
+                }))}
               />
             </div>
             <div>
@@ -158,6 +209,32 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
               />
             </div>
           </div>
+
+          {/* Project-specific fields */}
+          {isProjectMember && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">معدل الساعة</label>
+                <input
+                  type="number"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
+                  value={v.project_hourly_rate || ""}
+                  onChange={(e) => onChange((s) => ({ ...s, project_hourly_rate: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">الساعات المخصصة</label>
+                <input
+                  type="number"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
+                  value={v.allocated_hours || ""}
+                  onChange={(e) => onChange((s) => ({ ...s, allocated_hours: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Email */}
           <div>

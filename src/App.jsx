@@ -13,6 +13,7 @@ import ClientsDatabase from './components/ClientsDatabase.jsx';
 import AddProjectModal from './components/AddProjectModal.jsx';
 import EditProjectModal from './components/EditProjectModal.jsx';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal.jsx';
+import TeamDashboard from './components/TeamDashboard.jsx';
 
 // نظام الترجمة للتطبيق الرئيسي
 const appTranslations = {
@@ -629,6 +630,8 @@ export default function App() {
       setCurrentView('projects');
     } else if (section === 'clients') {
       setCurrentView('clients');
+    } else if (section === 'team') {
+      setCurrentView('team');
     } else {
       alert(`سيتم فتح قسم: ${section}`);
     }
@@ -671,7 +674,42 @@ export default function App() {
           </button>
 
           <HomePage 
-            onNavigate={setCurrentView}
+            onNavigate={handleNavigate}
+            language={language}
+          />
+        </div>
+      </>
+    );
+  }
+
+  // Show Team Dashboard
+  if (currentView === 'team') {
+    return (
+      <>
+        <style>{`
+          /* Use the locally registered Graphik Arabic as the app font */
+          body {
+            font-family: 'Graphik Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif;
+          }
+          input, select, button {
+            font-family: inherit;
+          }
+          input[type=number] {
+            text-align: right;
+            font-feature-settings: "tnum" 1;
+          }
+          input[type="date"] {
+            direction: rtl;
+            text-align: right;
+          }
+          input[type="date"]::-webkit-datetime-edit { direction: rtl; text-align: right; }
+          input[type="date"]::-webkit-datetime-edit-fields-wrapper { direction: rtl; }
+          input[type="date"]::-webkit-datetime-edit-text { padding: 0 2px; }
+        `}</style>
+        
+        <div className={`h-screen w-screen bg-[${colors.background}] text-[${colors.textPrimary}] flex`}>
+          <TeamDashboard 
+            onBack={() => setCurrentView('home')}
             language={language}
           />
         </div>

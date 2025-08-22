@@ -7,13 +7,15 @@ import {
   MailPlus,
   CheckCircle2,
   XCircle,
+  Copy,
 } from "lucide-react";
 import EditMemberModal from "./modals/EditMemberModal.jsx";
+import TeamMemberCard from './TeamMemberCard'; // Import the new card component
 import { supabase } from '../supabaseClient';
 
 /* ==================== Badges & Helpers ==================== */
 
-const ROLE_META = {
+export const ROLE_META = {
   manager: { label: "مدير",   cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   lead:    { label: "قائد فريق", cls: "bg-blue-50 text-blue-700 border-blue-200" },
   editor:  { label: "محرر",   cls: "bg-purple-50 text-purple-700 border-purple-200" },
@@ -21,16 +23,16 @@ const ROLE_META = {
   member:  { label: "عضو فريق", cls: "bg-gray-50 text-gray-700 border-gray-200" },
 };
 
-const STATUS_META = {
+export const STATUS_META = {
   active:   { label: "نشط",     icon: CheckCircle2, cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   inactive: { label: "غير نشط", icon: XCircle,      cls: "bg-red-50 text-red-700 border-red-200" },
 };
 
-function RoleBadge({ value }) {
+export function RoleBadge({ value }) {
   const m = ROLE_META[value] || ROLE_META.member;
   return <span className={`inline-flex items-center px-2 py-1 text-xs rounded-lg border ${m.cls}`}>{m.label}</span>;
 }
-function StatusBadge({ value }) {
+export function StatusBadge({ value }) {
   const m = STATUS_META[value] || STATUS_META.active;
   const Icon = m.icon;
   return (
@@ -122,6 +124,17 @@ function TeamPanel({ items = [], onAdd, onUpdate, onRemove, candidates = [] }) {
       avatar: "",
     });
   const openEdit = (row) => setEditing({ ...row, avatar: null });
+
+  // New handler for avatar change to pass to TeamMemberCard
+  const handleAvatarChange = async (memberId, file) => {
+    try {
+      const url = await uploadTeamAvatar(file, memberId);
+      onUpdate?.(memberId, { avatar_url: url });
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      alert("Failed to upload avatar.");
+    }
+  };
   const closeEdit = () => setEditing(null);
   // رفع صورة العضو وربطها
   async function uploadTeamAvatar(file, memberId) {
@@ -281,40 +294,48 @@ function TeamPanel({ items = [], onAdd, onUpdate, onRemove, candidates = [] }) {
             </thead>
             <tbody>
               {filtered.map((row) => (
-                <tr key={row.id} className="odd:bg-white even:bg-gray-50">
-                  {/* Avatar + Name (الصورة يمين والاسم يسارها) */}
-                  <td className={`${td}`}>
-                    <div className="flex items-center justify-start gap-3 relative">
-                      <div className="relative group">
-                        <img
-                          src={row.avatar_url || row.avatar || "https://i.pravatar.cc/96?img=1"}
-                          alt={row.name}
-                          className="w-9 h-9 rounded-full object-cover border border-gray-200"
-                        />
-                        <button
-                          type="button"
-                          className="absolute bottom-0 right-0 bg-white border border-gray-300 rounded-full p-1 shadow group-hover:scale-110 transition-all"
-                          style={{ transform: 'translate(30%, 30%)' }}
-                          title="تغيير الصورة"
-                          onClick={() => document.getElementById(`avatar-input-${row.id}`)?.click()}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <input
-                          type="file"
-                          id={`avatar-input-${row.id}`}
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={async (e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const url = await uploadTeamAvatar(file, row.id);
-                              onUpdate?.(row.id, { ...row, avatar_url: url });
-                            }
-                          }}
-                        />
+                <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className={`${td} font-medium`}>
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className="relative">
+                        {row.avatar_url ? (
+                          <img
+                            src={row.avatar_url}
+                            alt={row.name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-600">
+                            {row.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'U'}
+                          </div>
+                        )}
+                        {handleAvatarChange && (
+                          <>
+                            <button
+                              type="button"
+                              className="absolute -bottom-1 -right-1 bg-white border border-gray-300 rounded-full p-1 shadow"
+                              title="تغيير الصورة"
+                              onClick={() => document.getElementById(`avatar-input-${row.id}`)?.click()}
+                            >
+                              <Pencil size={10} />
+                            </button>
+                            <input
+                              type="file"
+                              id={`avatar-input-${row.id}`}
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  handleAvatarChange(row.id, file);
+                                }
+                              }}
+                            />
+                          </>
+                        )}
                       </div>
-                      <div className="font-medium text-gray-800">{row.name}</div>
+                      <span>{row.name}</span>
                     </div>
                   </td>
                   <td className={td}>
@@ -323,15 +344,23 @@ function TeamPanel({ items = [], onAdd, onUpdate, onRemove, candidates = [] }) {
                   <td className={td}>
                     <StatusBadge value={row.status} />
                   </td>
-                  <td className={td}>{row.joined || "-"}</td>
-                  <td className={td}>
-                    <a href={`mailto:${row.email}`} className="text-emerald-700 hover:underline text-sm">
-                      {row.email || "-"}
-                    </a>
-                  </td>
-                  <td className={td}>{row.phone || "-"}</td>
+                  <td className={td}>{row.joined || '-'}</td>
+                  <td className={td}>{row.email || '-'}</td>
+                  <td className={td}>{row.phone || '-'}</td>
                   <td className={td}>
                     <div className="flex items-center gap-2 justify-start">
+                      <button
+                        onClick={() => {
+                          const copy = { ...row };
+                          if (copy.id) delete copy.id;
+                          onAdd?.(copy);
+                        }}
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 inline-flex items-center gap-1"
+                        title="تكرار"
+                      >
+                        <Copy size={14} /> تكرار
+                      </button>
+
                       <button
                         onClick={() => openEdit(row)}
                         className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 inline-flex items-center gap-1"
@@ -339,6 +368,7 @@ function TeamPanel({ items = [], onAdd, onUpdate, onRemove, candidates = [] }) {
                       >
                         <Pencil size={14} /> تعديل
                       </button>
+
                       <button
                         onClick={() => removeRow?.(row.id)}
                         className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 inline-flex items-center gap-1"

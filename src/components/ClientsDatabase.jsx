@@ -21,7 +21,7 @@ import {
   Globe
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import ClientCard from './ClientCard';
+import ClientAccountCard from './ClientAccountCard';
 
 // نظام الترجمة
 const translations = {
@@ -866,22 +866,29 @@ const ClientsDatabase = ({ onBack }) => {
   };
 
   return (
-    <div className={`min-h-screen w-full bg-gradient-to-br from-gray-50 to-white ${language === 'ar' ? 'rtl' : 'ltr'} flex flex-col`}>
+    <div className={`min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-50 ${language === 'ar' ? 'rtl' : 'ltr'} flex flex-col`}>
+      {/* Decorative backgrounds */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-cyan-200 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '2s', animationDuration: '4s' }}></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-200 to-teal-200 blur-3xl animate-pulse" style={{ animationDelay: '4s', animationDuration: '4s', width: '28rem', height: '28rem', opacity: 0.10 }}></div>
+      </div>
+
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="relative z-10 bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className={`flex items-center justify-between ${language === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
             <div className={`flex items-center gap-4 ${language === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
               <button 
                 onClick={onBack}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
               >
                 <svg className={`w-6 h-6 ${language === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </button>
               <div className={`flex items-center gap-3 ${language === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
                   <Users className="text-white" size={20} />
                 </div>
                 <div className={`text-${language === 'ar' ? 'right' : 'left'}`}>
@@ -893,7 +900,7 @@ const ClientsDatabase = ({ onBack }) => {
             
             <button 
               onClick={() => setShowAddModal(true)}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium"
             >
               <Plus size={20} />
               <span>{t.addClient}</span>
@@ -903,7 +910,7 @@ const ClientsDatabase = ({ onBack }) => {
       </header>
 
       {/* Controls Bar */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="relative z-10 bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className={`flex flex-wrap items-center justify-between gap-4 ${language === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
             {/* Search */}
@@ -915,7 +922,7 @@ const ClientsDatabase = ({ onBack }) => {
                   placeholder={t.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full ${language === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`w-full ${language === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700`}
                 />
               </div>
             </div>
@@ -977,7 +984,7 @@ const ClientsDatabase = ({ onBack }) => {
 
           {/* Advanced Filters */}
           {showFilters && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-medium text-gray-700">{t.advancedFilters}</h4>
                 <button
@@ -987,7 +994,7 @@ const ClientsDatabase = ({ onBack }) => {
                   <X size={14} />
                   {t.clearFilters}
                 </button>
-        </div>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Industry Filter */}
@@ -996,14 +1003,14 @@ const ClientsDatabase = ({ onBack }) => {
                   <select
                     value={filters.industry}
                     onChange={(e) => setFilters({...filters, industry: e.target.value})}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                   >
                     <option value="">{t.allIndustries}</option>
                     {getIndustries().map(industry => (
                       <option key={industry} value={industry}>{industry}</option>
                     ))}
                   </select>
-      </div>
+                </div>
 
                 {/* Date Range Filter */}
                 <div>
@@ -1011,7 +1018,7 @@ const ClientsDatabase = ({ onBack }) => {
                   <select
                     value={filters.dateRange}
                     onChange={(e) => setFilters({...filters, dateRange: e.target.value})}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                   >
                     <option value="">{t.allPeriods}</option>
                     <option value="week">{t.lastWeek}</option>
@@ -1019,29 +1026,29 @@ const ClientsDatabase = ({ onBack }) => {
                     <option value="quarter">{t.lastQuarter}</option>
                     <option value="year">{t.lastYear}</option>
                   </select>
-                  </div>
+                </div>
 
                 {/* Has Projects Filter */}
-                  <div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t.hasProjects}</label>
                   <select
                     value={filters.hasProjects}
                     onChange={(e) => setFilters({...filters, hasProjects: e.target.value})}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                   >
                     <option value="all">{t.allClients}</option>
                     <option value="yes">{t.hasProjects}</option>
                     <option value="no">{t.noProjects}</option>
                   </select>
-                  </div>
                 </div>
               </div>
+            </div>
           )}
-                </div>
-              </div>
+        </div>
+      </div>
               
       {/* Clients Grid/List */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8 flex-1">
         {error && (
           <div className="mb-4 p-3 rounded border border-red-200 bg-red-50 text-red-700 text-sm">{error}</div>
         )}
@@ -1050,23 +1057,23 @@ const ClientsDatabase = ({ onBack }) => {
         <div className={`mb-4 flex items-center justify-between ${language === 'ar' ? 'flex-row' : 'flex-row-reverse'}`}>
           <div className={`text-sm text-gray-600 ${language === 'ar' ? 'text-right' : 'text-left'}`}>
             {t.resultsSummary.replace('{filtered}', filteredClients.length).replace('{total}', clients.length)}
-                </div>
+          </div>
           {Object.values(filters).some(f => f !== '' && f !== 'all') && (
             <div className={`text-sm text-blue-600 ${language === 'ar' ? 'text-left' : 'text-right'}`}>
               {t.activeFilters}
-                </div>
+            </div>
           )}
-              </div>
+        </div>
 
         {loading ? (
           <div className="text-gray-500">{t.loading}</div>
         ) : (
           <div className="grid" style={getViewStyles()}>
             {filteredClients.map((client) => (
-              <ClientCard
+              <ClientAccountCard
                 key={client.id}
-                client={client}
-                clientProjects={clientProjects}
+                account={client}
+                accountProjects={clientProjects}
                 getTotalProjectsValue={getTotalProjectsValue}
                 language={language}
                 onView={setSelectedClient}
@@ -1076,8 +1083,13 @@ const ClientsDatabase = ({ onBack }) => {
                 }}
                 onDelete={removeClient}
               />
-          ))}
-        </div>
+            ))}
+            {filteredClients.length === 0 && (
+              <div className="col-span-full text-center text-gray-500 py-8">
+                لا توجد نتائج مطابقة.
+              </div>
+            )}
+          </div>
         )}
       </main>
 

@@ -6,6 +6,7 @@ import PaymentsTable from "./PaymentsTable.jsx";
 import MilestonesPanel from "./MilestonesPanel.jsx";
 import DeliverablesPanel from "./DeliverablesPanel.jsx";
 import TeamPanel from "./TeamPanel.jsx";
+import ProjectTeamManager from "./ProjectTeamManager.jsx";
 import FilesPanel from "./FilesPanel.jsx";
 import OverviewPanel from "./OverviewPanel.jsx";
 
@@ -163,7 +164,12 @@ export default function ProjectSections({
         )}
 
         {active === "team" && (
-          <TeamPanel items={(teamMembers && teamMembers.length) ? teamMembers : team} onAdd={onAddTeamMember} onUpdate={onUpdateTeamMember} onRemove={onRemoveTeamMember} candidates={teamMembers || clients || []} />
+          <ProjectTeamManager 
+            projectId={project?.id} 
+            onUpdate={() => {
+              // يمكن إضافة تحديث للمشروع هنا إذا لزم الأمر
+            }} 
+          />
         )}
 
         {active === "files" && <FilesPanel />}
