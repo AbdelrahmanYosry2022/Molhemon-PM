@@ -323,9 +323,20 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
                       {/* show avatar next to owner name when available */}
                       {(() => {
                         const tm = Array.isArray(teamMembers) ? teamMembers : [];
-                        const member = tm.find(m => (row.owner_id && m.id === row.owner_id) || (m.name && m.name === row.owner));
-                        const avatar = (member && member.avatar_url) || row.avatar_url || null;
-                        const displayName = row.owner || (member && (member.name || member.full_name)) || "-";
+                        // البحث في أعضاء المشروع أولاً
+                        const projectMember = tm.find(m => 
+                          (row.owner_id && m.company_member_id === row.owner_id) || 
+                          (m.member_name && m.member_name === row.owner)
+                        );
+                        
+                        // إذا لم نجد في أعضاء المشروع، نبحث في الأعضاء العاديين
+                        const member = projectMember || tm.find(m => 
+                          (row.owner_id && m.id === row.owner_id) || 
+                          (m.name && m.name === row.owner)
+                        );
+                        
+                        const avatar = (member && (member.member_avatar_url || member.avatar_url)) || row.avatar_url || null;
+                        const displayName = row.owner || (member && (member.member_name || member.name || member.full_name)) || "-";
                         if (displayName === "-") return displayName;
                         return (
                           <div className="flex items-center justify-start gap-2">
@@ -533,24 +544,36 @@ function EditModal({ value, onChange, onCancel, onSave, onDelete, teamMembers })
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
                   value={v.owner_id || v.owner || ""}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    // find matching member by id or fallback to treating value as name
-                    const member = teamMembers.find(m => (m && m.id && String(m.id) === String(val))) || teamMembers.find(m => (typeof m === 'string' && m === val));
-                    if (member && typeof member === 'object') {
-                      const name = member.name || member.full_name || member.email || "";
-                      onChange(s => ({ ...s, owner: name, owner_id: member.id }));
-                    } else {
-                      onChange(s => ({ ...s, owner: val, owner_id: undefined }));
-                    }
+                                         const val = e.target.value;
+                     // البحث في أعضاء المشروع أولاً
+                     const projectMember = teamMembers.find(m => 
+                       (m && m.company_member_id && String(m.company_member_id) === String(val)) ||
+                       (m && m.id && String(m.id) === String(val))
+                     );
+                     
+                     // إذا لم نجد في أعضاء المشروع، نبحث في الأعضاء العاديين
+                     const member = projectMember || teamMembers.find(m => 
+                       (m && m.id && String(m.id) === String(val)) || 
+                       (typeof m === 'string' && m === val)
+                     );
+                     
+                     if (member && typeof member === 'object') {
+                       const name = member.member_name || member.name || member.full_name || member.email || "";
+                       const memberId = member.company_member_id || member.id;
+                       onChange(s => ({ ...s, owner: name, owner_id: memberId }));
+                     } else {
+                       onChange(s => ({ ...s, owner: val, owner_id: undefined }));
+                     }
                   }}
                 >
                   <option value="">— اختر مسؤول —</option>
-                  {teamMembers.map((m, i) => {
-                    const name = (typeof m === 'string') ? m : (m.name || m.full_name || m.email || `عضو ${i+1}`);
-                    const key = (typeof m === 'string') ? name : (m.id || m.email || name + i);
-                    const value = (typeof m === 'string') ? name : (m.id || name);
-                    return <option key={key} value={value}>{name}{m.role ? ` — ${m.role}` : ''}</option>;
-                  })}
+                                     {teamMembers.map((m, i) => {
+                     const name = (typeof m === 'string') ? m : (m.member_name || m.name || m.full_name || m.email || `عضو ${i+1}`);
+                     const key = (typeof m === 'string') ? name : (m.company_member_id || m.id || m.email || name + i);
+                     const value = (typeof m === 'string') ? name : (m.company_member_id || m.id || name);
+                     const role = m.project_role || m.role;
+                     return <option key={key} value={value}>{name}{role ? ` — ${role}` : ''}</option>;
+                   })}
                 </select>
               ) : (
                 <input

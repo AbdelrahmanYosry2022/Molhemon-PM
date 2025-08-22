@@ -7,6 +7,7 @@ import MilestonesPanel from "./MilestonesPanel.jsx";
 import DeliverablesPanel from "./DeliverablesPanel.jsx";
 import TeamPanel from "./TeamPanel.jsx";
 import ProjectTeamManager from "./ProjectTeamManager.jsx";
+import ProjectTeamProvider, { useProjectTeam } from "./ProjectTeamProvider.jsx";
 import FilesPanel from "./FilesPanel.jsx";
 import OverviewPanel from "./OverviewPanel.jsx";
 
@@ -106,6 +107,22 @@ export default function ProjectSections({
     </button>
   );
 
+  // مكون داخلي لاستخدام أعضاء المشروع في المخرجات
+  const DeliverablesWithTeam = () => {
+    const { projectMembers } = useProjectTeam();
+    
+    return (
+      <DeliverablesPanel 
+        items={deliverables}
+        onAdd={addDeliverable}
+        onUpdate={updateDeliverable}
+        onRemove={removeDeliverable}
+        teamMembers={projectMembers}
+        onReorderDeliverables={reorderDeliverables}
+      />
+    );
+  };
+
   return (
     <section className="mt-6">
       <div className={`flex gap-2 flex-wrap ${isAr ? "justify-start" : "justify-end"}`}>
@@ -153,23 +170,20 @@ export default function ProjectSections({
         )}
 
         {active === "deliverables" && (
-          <DeliverablesPanel 
-            items={deliverables}
-            onAdd={addDeliverable}
-            onUpdate={updateDeliverable}
-            onRemove={removeDeliverable}
-            teamMembers={teamMembers}
-            onReorderDeliverables={reorderDeliverables}
-          />
+          <ProjectTeamProvider projectId={project?.id}>
+            <DeliverablesWithTeam />
+          </ProjectTeamProvider>
         )}
 
         {active === "team" && (
-          <ProjectTeamManager 
-            projectId={project?.id} 
-            onUpdate={() => {
-              // يمكن إضافة تحديث للمشروع هنا إذا لزم الأمر
-            }} 
-          />
+          <ProjectTeamProvider projectId={project?.id}>
+            <ProjectTeamManager 
+              projectId={project?.id} 
+              onUpdate={() => {
+                // يمكن إضافة تحديث للمشروع هنا إذا لزم الأمر
+              }} 
+            />
+          </ProjectTeamProvider>
         )}
 
         {active === "files" && <FilesPanel />}

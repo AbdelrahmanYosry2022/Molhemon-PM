@@ -295,6 +295,7 @@ const TeamMembersTab = ({ teamMembers, onAdd, onUpdate, onRemove, language }) =>
           onSave={handleSaveMember}
           onDelete={() => editingMember.id && handleDeleteMember(editingMember.id)}
           candidates={[]}
+          isProjectMember={false}
         />
       )}
     </div>

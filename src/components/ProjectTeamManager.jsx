@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { Pencil, Trash2, UserPlus, Copy } from 'lucide-react';
 import EditMemberModal from './modals/EditMemberModal';
+import { useProjectTeam } from './ProjectTeamProvider';
 
 // Badges for project roles and statuses
 export const PROJECT_ROLE_META = {
@@ -38,27 +39,16 @@ export function ProjectStatusBadge({ value }) {
 }
 
 function ProjectTeamManager({ projectId, onUpdate }) {
-  const [projectMembers, setProjectMembers] = useState([]);
+  const { projectMembers, refreshTeam } = useProjectTeam();
   const [companyMembers, setCompanyMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
 
-  // Load project team members
-  const loadProjectTeam = async () => {
+  // Load company members for dropdown
+  const loadCompanyMembers = async () => {
     try {
       setLoading(true);
       
-      // Load project team members using the view
-      const { data: members, error } = await supabase
-        .from('project_team_view')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('joined_project_date', { ascending: false });
-
-      if (error) throw error;
-      setProjectMembers(members || []);
-
-      // Load company members for dropdown
       const { data: companyMembersData, error: companyError } = await supabase
         .from('company_team_members')
         .select('*')
@@ -68,7 +58,7 @@ function ProjectTeamManager({ projectId, onUpdate }) {
       setCompanyMembers(companyMembersData || []);
 
     } catch (error) {
-      console.error('Error loading project team:', error);
+      console.error('Error loading company members:', error);
     } finally {
       setLoading(false);
     }
@@ -76,7 +66,7 @@ function ProjectTeamManager({ projectId, onUpdate }) {
 
   useEffect(() => {
     if (projectId) {
-      loadProjectTeam();
+      loadCompanyMembers();
     }
   }, [projectId]);
 
@@ -100,8 +90,9 @@ function ProjectTeamManager({ projectId, onUpdate }) {
 
       if (error) throw error;
 
-      setProjectMembers(prev => [data, ...prev]);
-      onUpdate?.();
+             // إعادة تحميل البيانات لضمان ظهور الاسم والصورة
+       await refreshTeam();
+       onUpdate?.();
     } catch (error) {
       console.error('Error adding project member:', error);
       throw error;
@@ -118,11 +109,8 @@ function ProjectTeamManager({ projectId, onUpdate }) {
 
       if (error) throw error;
 
-      setProjectMembers(prev => 
-        prev.map(member => 
-          member.id === id ? { ...member, ...updates } : member
-        )
-      );
+      // إعادة تحميل البيانات لضمان تحديث العرض
+      await refreshTeam();
       onUpdate?.();
     } catch (error) {
       console.error('Error updating project member:', error);
@@ -140,7 +128,8 @@ function ProjectTeamManager({ projectId, onUpdate }) {
 
       if (error) throw error;
 
-      setProjectMembers(prev => prev.filter(member => member.id !== id));
+      // إعادة تحميل البيانات لضمان تحديث العرض
+      await refreshTeam();
       onUpdate?.();
     } catch (error) {
       console.error('Error removing project member:', error);

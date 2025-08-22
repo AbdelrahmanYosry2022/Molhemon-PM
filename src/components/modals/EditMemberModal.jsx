@@ -77,41 +77,58 @@ export default function EditMemberModal({ value, onChange, onCancel, onSave, onD
             />
           </div>
 
-          {/* Member selector from database */}
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">العضو (اختر من قاعدة البيانات)</label>
-            <select
-              className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
-              value={v._candidate_id || ""}
-              onChange={(e) => {
-                const cid = e.target.value;
-                if (!cid) return onChange((s) => ({ ...s, _candidate_id: "", name: "", email: "", phone: "", avatar_url: "" }));
-                const sel = candidates.find(c => String(c.id) === String(cid));
-                if (sel) {
-                  onChange((s) => ({ 
-                    ...s, 
-                    _candidate_id: cid, 
-                    name: sel.name || (sel.first_name ? `${sel.first_name} ${sel.last_name||''}`.trim() : ''), 
-                    email: sel.email || '', 
-                    phone: sel.phone || '', 
-                    avatar_url: sel.avatar_url || sel.avatar || '' 
-                  }));
-                }
-              }}
-              required
-            >
-              <option value="">-- اختر عضو من القائمة --</option>
-              {candidates && candidates.length > 0 ? (
-                candidates.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.first_name ? `${c.first_name} ${c.last_name||''}`.trim() : c.name || c.email || c.id}
-                  </option>
-                ))
-              ) : (
-                <option value="" disabled>لا توجد أعضاء متاحة</option>
-              )}
-            </select>
-          </div>
+          {/* Member selector from database - only for project members */}
+          {isProjectMember && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">العضو (اختر من قاعدة البيانات)</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
+                value={v._candidate_id || ""}
+                onChange={(e) => {
+                  const cid = e.target.value;
+                  if (!cid) return onChange((s) => ({ ...s, _candidate_id: "", name: "", email: "", phone: "", avatar_url: "" }));
+                  const sel = candidates.find(c => String(c.id) === String(cid));
+                  if (sel) {
+                    onChange((s) => ({ 
+                      ...s, 
+                      _candidate_id: cid, 
+                      name: sel.name || (sel.first_name ? `${sel.first_name} ${sel.last_name||''}`.trim() : ''), 
+                      email: sel.email || '', 
+                      phone: sel.phone || '', 
+                      avatar_url: sel.avatar_url || sel.avatar || '' 
+                    }));
+                  }
+                }}
+                required
+              >
+                <option value="">-- اختر عضو من القائمة --</option>
+                {candidates && candidates.length > 0 ? (
+                  candidates.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.first_name ? `${c.first_name} ${c.last_name||''}`.trim() : c.name || c.email || c.id}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>لا توجد أعضاء متاحة</option>
+                )}
+              </select>
+            </div>
+          )}
+
+          {/* Name field - for company members */}
+          {!isProjectMember && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">الاسم</label>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
+                value={v.name || ""}
+                onChange={(e) => onChange((s) => ({ ...s, name: e.target.value }))}
+                placeholder="اسم العضو"
+                required
+              />
+            </div>
+          )}
 
           {/* Role / Status */}
           <div className="grid grid-cols-2 gap-3">
