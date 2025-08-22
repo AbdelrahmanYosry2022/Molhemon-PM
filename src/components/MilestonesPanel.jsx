@@ -1,6 +1,8 @@
 // src/components/MilestonesPanel.jsx
 import React, { useMemo, useState, useEffect } from "react";
-import { Calendar, CheckCircle2, AlertTriangle, Pencil, Trash2, X } from "lucide-react";
+import { fmtCurrency } from "../utils/helpers";
+import { Calendar, CheckCircle2, AlertTriangle, Pencil, Trash2, X, Copy } from "lucide-react";
+import VisualTimeline from './VisualTimeline.jsx';
 
 const STATUS_COLORS = {
   done: "text-green-700 bg-green-50 border-green-200",
@@ -234,7 +236,7 @@ function MilestoneStatCard({ label, value }) {
 
 /* ---------- Panel ---------- */
 
-export default function MilestonesPanel({ items = [], deliverables = [], onAdd, onUpdate, onRemove }) {
+export default function MilestonesPanel({ items = [], deliverables = [], onAdd, onUpdate, onRemove, currency = "EGP" }) {
   // يبدأ دائماً ببيانات فارغة عند الإنشاء
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
@@ -417,7 +419,7 @@ export default function MilestonesPanel({ items = [], deliverables = [], onAdd, 
                   <td className={td}>
                     <StatusBadge value={row.status} />
                   </td>
-                  <td className={td}>{row.budget ? `${row.budget.toLocaleString()} EGP` : "-"}</td>
+                  <td className={td}>{row.budget ? fmtCurrency(row.budget, currency) : "-"}</td>
                   <td className={td}>
                     {(row.deliverable_ids || []).map(d_id => {
                       const deliverable = deliverables.find(d => d.id === d_id);
@@ -427,6 +429,41 @@ export default function MilestonesPanel({ items = [], deliverables = [], onAdd, 
                   <td className={td}>{row.note || "-"}</td>
                   <td className={td}>
                     <div className="flex items-center gap-2 justify-start">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const copy = { ...row };
+                            // remove id so parent treats this as a new milestone
+                            if (copy.id) delete copy.id;
+                            // clear deliverable references when duplicating so the new milestone starts without linked deliverables
+                            // (prevents duplicating references that may not be valid or should be re-assigned)
+                            copy.deliverable_ids = [];
+                            // normalize budget to number or null
+                            if (copy.budget === "" || copy.budget === undefined) delete copy.budget;
+                            else if (copy.budget != null) copy.budget = Number(copy.budget) || 0;
+                            // remove any UI-only keys
+                            Object.keys(copy).forEach(k => { if (k.startsWith('_')) delete copy[k]; });
+
+                            const res = onAdd ? onAdd(copy) : null;
+                            // handle promise or sync return
+                            if (res && typeof res.then === 'function') {
+                              const created = await res;
+                              if (created && created.id) {
+                                // open newly created milestone for quick edit
+                                setEditing(created);
+                              }
+                            } else if (res && res.id) {
+                              setEditing(res);
+                            }
+                          } catch (err) {
+                            console.error('Failed to duplicate milestone:', err);
+                          }
+                        }}
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 inline-flex items-center gap-1"
+                        title="تكرار"
+                      >
+                        <Copy size={14} /> تكرار
+                      </button>
                       <button
                         onClick={() => openEdit(row)}
                         className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 inline-flex items-center gap-1"
@@ -458,35 +495,9 @@ export default function MilestonesPanel({ items = [], deliverables = [], onAdd, 
       </div>
 
 
-      {/* --------- أسفل الداشبورد: تشارتين ملخصين --------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h3 className="text-base font-bold text-gray-800 mb-3">توزيع الحالات</h3>
-          <StatusDonutChart items={filtered} />
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h3 className="text-base font-bold text-gray-800 mb-3">منحنى الإنجاز عبر الزمن</h3>
-          <BurndownChart items={filtered} />
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <h3 className="text-base font-bold text-gray-800 mb-3">الخط الزمني</h3>
-            <ol className="relative border-s border-gray-200 ps-4 space-y-4">
-              {filtered.slice(0, 6).map((item) => (
-                <li key={item.id}>
-                  <div className="absolute -start-1.5 mt-1.5 size-3 rounded-full bg-white border-2 border-emerald-400" />
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium text-gray-800">{item.title}</div>
-                    <span className="text-xs text-gray-500">{item.date || "-"}</span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <StatusBadge value={item.status} />
-                    {item.note && <span className="text-xs text-gray-500">• {item.note}</span>}
-                  </div>
-                </li>
-              ))}
-              {filtered.length === 0 && <li className="text-sm text-gray-500">لا توجد عناصر لعرضها.</li>}
-            </ol>
-          </div>
+      {/* --------- أسفل الداشبورد: الخط الزمني (ملء العرض) --------- */}
+      <div className="mt-4">
+        <VisualTimeline items={filtered} deliverables={deliverables} currency={currency} />
       </div>
 
       {/* مودال الإضافة */}

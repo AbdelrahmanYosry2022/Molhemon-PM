@@ -1,5 +1,6 @@
 // src/components/ProjectSections.jsx
 import React, { useMemo, useState } from "react";
+import { supabase } from "../supabaseClient"; // استيراد supabase
 
 import PaymentsTable from "./PaymentsTable.jsx";
 import MilestonesPanel from "./MilestonesPanel.jsx";
@@ -7,8 +8,6 @@ import DeliverablesPanel from "./DeliverablesPanel.jsx";
 import TeamPanel from "./TeamPanel.jsx";
 import FilesPanel from "./FilesPanel.jsx";
 import OverviewPanel from "./OverviewPanel.jsx";
-import SpendingOverTimeChart from "./charts/SpendingOverTimeChart.jsx";
-
 
 import {
   LayoutDashboard,
@@ -21,7 +20,6 @@ import {
 
 /**
  * تبويب لأقسام إدارة المشروع.
- * كل تبويب في كومبوننت منفصل لسهولة الصيانة.
  */
 export default function ProjectSections({
   projectId,
@@ -51,6 +49,37 @@ export default function ProjectSections({
   const isAr = language === "ar";
   const T = (ar, en) => (isAr ? ar : en);
 
+  const [active, setActive] = useState("payments"); // Default to payments tab
+
+  // --- دالة رفع المرفقات ---
+  const handleUploadAttachment = async (file, paymentId) => {
+    if (!file || !projectId) return null;
+    const filePath = `public/${projectId}/${paymentId}-${file.name}`;
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('payment-attachments')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { publicURL, error: urlError } = supabase.storage
+        .from('payment-attachments')
+        .getPublicUrl(filePath);
+
+      if (urlError) {
+        throw urlError;
+      }
+
+      return publicURL;
+    } catch (error) {
+      console.error("Error uploading file:", error.message);
+      // يمكنك إضافة إشعار للمستخدم هنا
+      return null;
+    }
+  };
+
   const tabs = [
     { id: "overview",    label: T("نظرة عامة", "Overview"), icon: LayoutDashboard },
     { id: "payments",    label: T("المدفوعات", "Payments"), icon: Receipt },
@@ -60,14 +89,9 @@ export default function ProjectSections({
     { id: "files",       label: T("الملفات والعقود", "Files & Contracts"), icon: FileText },
   ];
 
-  const [active, setActive] = useState("overview");
-
   const TabButton = ({ id, label, Icon }) => (
     <button
-      onClick={() => {
-        console.log(`TabButton clicked: ${id}`);
-        setActive(id);
-      }}
+      onClick={() => setActive(id)}
       className={`relative px-4 py-2 rounded-xl border text-sm font-medium transition-all
         ${active === id
           ? "bg-emerald-50 border-emerald-200 text-emerald-700"
@@ -80,60 +104,15 @@ export default function ProjectSections({
     </button>
   );
 
-  const Card = ({ title, children, className = "" }) => (
-    <div className={`bg-white rounded-2xl border border-gray-100 p-5 ${className}`}>
-      {title && <h3 className="text-base font-bold text-gray-800 mb-3">{title}</h3>}
-      <div className="text-sm text-gray-600">{children}</div>
-    </div>
-  );
-
-  // حسابات نظرة سريعة من الداتا الحقيقية
-  const paymentsSummary = useMemo(() => {
-    // ربط اسم البند من الفئات
-    const paymentsWithCat = payments.map(p => ({
-      ...p,
-      category: categories.find(c => c.id === p.category_id)?.name || p.category || "—",
-      date: p.pay_date || p.date,
-    }));
-    const byCat = {};
-    let total = 0;
-    paymentsWithCat.forEach(p => {
-      total += Number(p.amount) || 0;
-      const k = p.category || "—";
-      byCat[k] = (byCat[k] || 0) + (Number(p.amount) || 0);
-    });
-    const byCatArr = Object.entries(byCat).map(([category, value]) => ({ category, value }));
-    const latest = [...paymentsWithCat]
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)))
-      .slice(0, 3);
-
-    // حدود افتراضية للتنبيه (يمكنك تعديلها لاحقاً)
-    const thresholds = { Production: 5000, Editing: 3000, Marketing: 2000 };
-    const alerts = byCatArr
-      .filter(x => thresholds[x.category] && x.value > thresholds[x.category])
-      .map(x => ({
-        category: x.category,
-        value: x.value,
-        limit: thresholds[x.category],
-      }));
-
-    return { total, byCatArr, latest, alerts };
-  }, [payments, categories]);
-
-  const fmtEGP = (n) => `${Number(n).toLocaleString("en-US")} EGP`;
-
   return (
     <section className="mt-6">
-      {/* شريط التبويبات */}
       <div className={`flex gap-2 flex-wrap ${isAr ? "justify-start" : "justify-end"}`}>
         {tabs.map((t) => (
           <TabButton key={t.id} id={t.id} label={t.label} Icon={t.icon} />
         ))}
       </div>
 
-      {/* محتوى التبويب */}
       <div className="mt-5">
-        {/* ====== OVERVIEW ====== */}
         {active === "overview" && (
           <OverviewPanel
             language={language}
@@ -146,97 +125,21 @@ export default function ProjectSections({
           />
         )}
 
-        {/* ====== PAYMENTS ====== */}
         {active === "payments" && (
-          <div className="grid grid-cols-1 gap-4">
-            {/* نظرة سريعة (من غير "إجراءات سريعة") */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card title={T("نظرة سريعة", "Quick Overview")}>
-                <div className="space-y-4">
-                  {/* إجمالي المدفوعات */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500">{T("إجمالي المدفوعات", "Total Spent")}</span>
-                    <span className="text-lg font-semibold text-gray-800">{fmtEGP(paymentsSummary.total)}</span>
-                  </div>
-
-                  {/* تصنيف حسب البنود */}
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">{T("حسب البنود", "By Category")}</div>
-                    <ul className="space-y-1">
-                      {paymentsSummary.byCatArr.map((row) => (
-                        <li key={row.category} className="flex items-center justify-between">
-                          <span className="font-medium text-gray-800">{row.category}</span>
-                          <span className="text-gray-700">{fmtEGP(row.value)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* تنبيهات عند تخطي حد بند */}
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">{T("تنبيهات", "Alerts")}</div>
-                    {paymentsSummary.alerts.length ? (
-                      <ul className="space-y-1">
-                        {paymentsSummary.alerts.map(a => (
-                          <li key={a.category} className="text-sm text-red-600">
-                            {T("تجاوز بند", "Exceeded in")} <span className="font-semibold">{a.category}</span> — {fmtEGP(a.value)} {T("أعلى من الحد", "over limit")} ({fmtEGP(a.limit)})
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                        {T("لا توجد تجاوزات حالياً", "No category limits exceeded")}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-
-              {/* آخر المدفوعات */}
-              <Card title={T("آخر المدفوعات", "Latest Payments")}>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-2 text-sm font-semibold text-gray-700 text-right">{T("التاريخ","Date")}</th>
-                        <th className="px-3 py-2 text-sm font-semibold text-gray-700 text-right">{T("البند","Category")}</th>
-                        <th className="px-3 py-2 text-sm font-semibold text-gray-700 text-right">{T("المبلغ","Amount")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paymentsSummary.latest.map(r => (
-                        <tr key={r.id} className="odd:bg-white even:bg-gray-50">
-                          <td className="px-3 py-2 text-sm text-gray-700">{r.date}</td>
-                          <td className="px-3 py-2 text-sm text-gray-700">{r.category}</td>
-                          <td className="px-3 py-2 text-sm text-gray-700">{fmtEGP(r.amount)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </div>
-
-            {/* جدول المدفوعات */}
-            <PaymentsTable
-              currency="EGP"
-              payments={payments.map(p => ({
-                ...p,
-                date: p.pay_date || p.date,
-                category: categories.find(c => c.id === p.category_id)?.name || p.category || "—"
-              }))}
-              categories={categories}
-              onAdd={addPayment}
-              onUpdate={updatePayment}
-              onRemove={removePayment}
-            />
-
-          
-
-          </div>
+          <PaymentsTable
+            currency={project?.currency || "EGP"}
+            payments={payments.map(p => ({
+              ...p,
+              date: p.pay_date || p.date,
+            }))}
+            milestones={milestones} // تمرير المراحل
+            onAdd={addPayment}
+            onUpdate={updatePayment}
+            onRemove={removePayment}
+            onUploadAttachment={handleUploadAttachment} // تمرير دالة الرفع
+          />
         )}
 
-        {/* ====== MILESTONES ====== */}
         {active === "milestones" && (
           <MilestonesPanel
             items={milestones}
@@ -247,7 +150,6 @@ export default function ProjectSections({
           />
         )}
 
-        {/* ====== DELIVERABLES ====== */}
         {active === "deliverables" && (
           <DeliverablesPanel 
             items={deliverables}
@@ -258,12 +160,10 @@ export default function ProjectSections({
           />
         )}
 
-        {/* ====== TEAM ====== */}
         {active === "team" && (
           <TeamPanel items={(teamMembers && teamMembers.length) ? teamMembers : team} onAdd={onAddTeamMember} onUpdate={onUpdateTeamMember} onRemove={onRemoveTeamMember} candidates={teamMembers || clients || []} />
         )}
 
-        {/* ====== FILES ====== */}
         {active === "files" && <FilesPanel />}
       </div>
     </section>

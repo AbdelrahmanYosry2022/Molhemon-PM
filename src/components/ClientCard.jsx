@@ -3,6 +3,7 @@ import { Card } from "./ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { MapPin, Mail, Phone, Calendar, Globe, Twitter, Linkedin, Eye, Edit2, Trash2 } from "lucide-react";
+import { fmtCurrency } from "../utils/helpers";
 
 // نظام الترجمة للكارد
 const cardTranslations = {
@@ -37,7 +38,8 @@ const ClientCard = ({
   onDelete, 
   clientProjects = {}, 
   getTotalProjectsValue,
-  language = 'ar'
+  language = 'ar',
+  currency = 'EGP'
 }) => {
   const t = cardTranslations[language];
   const fullName = `${client.prefix || ""} ${client.first_name || ""} ${client.last_name || ""}`.trim();
@@ -114,7 +116,7 @@ const ClientCard = ({
               <span>{t.projects}: {clientProjects[client.id].length}</span>
             </div>
             <div className={`text-xs text-blue-600 text-${language === 'ar' ? 'right' : 'left'}`}>
-              {t.totalValue}: {getTotalProjectsValue ? getTotalProjectsValue(client.id).toLocaleString() : 0} {t.currency}
+              {t.totalValue}: {getTotalProjectsValue ? fmtCurrency(getTotalProjectsValue(client.id), currency) : fmtCurrency(0, currency)}
             </div>
           </div>
         )}

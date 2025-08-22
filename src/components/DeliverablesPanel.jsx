@@ -1,6 +1,6 @@
 // src/components/DeliverablesPanel.jsx
 import React, { useMemo, useState, useEffect } from "react";
-import { CheckCircle2, Clock, XCircle, Eye, Paperclip, Pencil, Trash2,
+import { CheckCircle2, Clock, XCircle, Eye, Paperclip, Pencil, Trash2, Copy,
          Mic, Video, Film, BookOpen, Image, Layers, Globe, Star, Code, Plus, Check, X } from "lucide-react";
 import driveSvg from '../assets/google-drive.svg';
 
@@ -282,12 +282,28 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
                   <td className={td}>
                     <div className="flex items-center gap-2 justify-start">
                       <button
+                        onClick={() => {
+                          const copy = { ...row };
+                          // remove id so parent treats this as a new deliverable
+                          if (copy.id) delete copy.id;
+                          // normalize links if present
+                          if (copy.links && !Array.isArray(copy.links)) copy.links = String(copy.links).split('\n').map(s => s.trim()).filter(Boolean);
+                          onAdd?.(copy);
+                        }}
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 inline-flex items-center gap-1"
+                        title="تكرار"
+                      >
+                        <Copy size={14} /> تكرار
+                      </button>
+
+                      <button
                         onClick={() => openEdit(row)}
                         className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 inline-flex items-center gap-1"
                         title="تعديل"
                       >
                         <Pencil size={14} /> تعديل
                       </button>
+
                       <button
                         onClick={() => removeRow(row.id)}
                         className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 inline-flex items-center gap-1"

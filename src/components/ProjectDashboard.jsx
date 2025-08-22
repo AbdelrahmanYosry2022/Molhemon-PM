@@ -1,7 +1,9 @@
 // src/components/ProjectDashboard.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { colors } from '../utils/colors';
 import ProjectSections from "./ProjectSections.jsx";
+import { Pencil } from 'lucide-react';
+import EditProjectModal from './EditProjectModal.jsx';
 
 function ProjectDashboard({
   project,
@@ -59,29 +61,47 @@ function ProjectDashboard({
   // ربط العميل الحقيقي
   const realClient = clients?.find(c => c.id === project.client_id) || null;
 
+  const [editing, setEditing] = useState(false);
+
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto">
-      <header>
-        <h1 className={`text-3xl font-bold text-[${colors.textPrimary}]`}>
-          {project.name}
-        </h1>
-        {realClient && (
-          <p className={`text-[${colors.textSecondary}] text-lg`}>
-            العميل: {realClient.first_name} {realClient.last_name}
-          </p>
-        )}
-        <p className={`text-[${colors.textSecondary}]`}>
-          مرحباً بك، قم بإدارة ميزانية وجداول مشروعك من هنا.
-        </p>
+      <header className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className={`text-3xl font-bold text-[${colors.textPrimary}]`}>
+              {project.name}
+            </h1>
+            <button onClick={() => setEditing(true)} title="تعديل المشروع" className="p-2 rounded-full hover:bg-gray-100">
+              <Pencil size={18} className="text-gray-600" />
+            </button>
+          </div>
+          {realClient && (
+            <p className={`text-[${colors.textSecondary}] text-lg mt-2`}>
+              العميل: {realClient.first_name} {realClient.last_name}
+            </p>
+          )}
+        </div>
       </header>
+
+      {editing && (
+        <EditProjectModal
+          project={project}
+          clients={clients}
+          onClose={() => setEditing(false)}
+          onProjectUpdated={(updated) => {
+            setEditing(false);
+            updateProject && updateProject(updated);
+          }}
+        />
+      )}
 
       <ProjectSections
         projectId={project?.id}
         language={language || "ar"}
         project={project}
-  client={realClient}
-  clients={clients}
-  categories={categories}
+        client={realClient}
+        clients={clients}
+        categories={categories}
         milestones={milestones}
         payments={payments}
         deliverables={deliverables}
@@ -120,7 +140,7 @@ function ProjectDashboard({
         addMilestone={addMilestone}
         removeMilestone={removeMilestone}
         updateMilestone={updateMilestone}
-              addDeliverable={addDeliverable}
+        addDeliverable={addDeliverable}
         removeDeliverable={removeDeliverable}
         updateDeliverable={updateDeliverable}
       />

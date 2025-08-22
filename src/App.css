@@ -40,3 +40,38 @@
 .read-the-docs {
   color: #888;
 }
+
+/* إخفاء أيقونة التقويم الافتراضية في جميع المتصفحات */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: none;
+}
+input[type="date"]::-webkit-input-placeholder {
+  color: #b0b0b0;
+}
+input[type="date"]::-ms-input-placeholder {
+  color: #b0b0b0;
+}
+input[type="date"]::placeholder {
+  color: #b0b0b0;
+}
+input[type="date"]::-moz-placeholder {
+  color: #b0b0b0;
+}
+input[type="date"]::-ms-clear {
+  display: none;
+}
+input[type="date"]::-ms-reveal {
+  display: none;
+}
+input[type="date"] {
+  position: relative;
+  z-index: 1;
+  direction: ltr;
+}
+
+/* تحسين placeholder للبحث */
+input[type="search"], input[type="text"]::placeholder {
+  color: #b0b0b0;
+  opacity: 1;
+}

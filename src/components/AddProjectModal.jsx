@@ -52,6 +52,7 @@ function AddProjectModal({ onClose, onProjectAdded, clients = [] }) {
       const projectData = {
         name: name.trim(),
         total: parseFloat(total) || 0,
+        currency: currency || 'EGP',
         start_date: startDate ? new Date(startDate).toISOString() : null,
         end_date: endDate ? new Date(endDate).toISOString() : null,
         client_id: clientId || null
@@ -122,6 +123,7 @@ function AddProjectModal({ onClose, onProjectAdded, clients = [] }) {
                   <option>EGP</option>
                   <option>USD</option>
                   <option>EUR</option>
+                  <option>SAR</option>
                 </select>
               </div>
             </div>

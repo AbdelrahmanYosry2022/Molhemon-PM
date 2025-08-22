@@ -1,5 +1,6 @@
 // src/components/OverviewPanel.jsx
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
+import { fmtCurrency, convertCurrency, fetchRates, DEFAULT_EXCHANGE_RATES } from "../utils/helpers";
 
 /**
  * لوحة "نظرة عامة" — KPIs بخلفية خضراء + ملخصات سريعة.
@@ -13,14 +14,34 @@ export default function OverviewPanel({
   categories = [],
   team = [],
   files = [],
+  currency = "EGP",
 }) {
+  const [rates, setRates] = useState(DEFAULT_EXCHANGE_RATES);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const r = await fetchRates();
+        if (mounted) setRates(r);
+      } catch (err) {
+        setRates(DEFAULT_EXCHANGE_RATES);
+      }
+    })();
+    return () => (mounted = false);
+  }, []);
   const isAr = language === "ar";
   const T = (ar, en) => (isAr ? ar : en);
-  const fmt = (n) => Number(n).toLocaleString("en-US");
+  const projectCurrency = project?.currency || currency;
 
   // حساب القيم الحقيقية
   const budgetTotal = project?.total || 0;
-  const spent = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const spent = payments.reduce((sum, p) => {
+    const amt = Number(p.amount || 0);
+    const from = p.currency || project?.currency || currency || 'EGP';
+    const converted = convertCurrency(amt, from, projectCurrency, rates);
+    return sum + converted;
+  }, 0);
   const remaining = budgetTotal - spent;
   const utilization = budgetTotal > 0 ? Math.round((spent / budgetTotal) * 100) : 0;
 
@@ -61,15 +82,15 @@ export default function OverviewPanel({
       <div className="xl:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-xl shadow">
           <p className="text-sm/5 opacity-90">{T("الميزانية الكلية", "Total Budget")}</p>
-          <h3 className="text-2xl font-bold mt-1">{fmt(budgetTotal)} EGP</h3>
+          <h3 className="text-2xl font-bold mt-1">{fmtCurrency(budgetTotal, projectCurrency)}</h3>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-xl shadow">
           <p className="text-sm/5 opacity-90">{T("المدفوع", "Spent")}</p>
-          <h3 className="text-2xl font-bold mt-1">{fmt(spent)} EGP</h3>
+          <h3 className="text-2xl font-bold mt-1">{fmtCurrency(spent, projectCurrency)}</h3>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-xl shadow">
           <p className="text-sm/5 opacity-90">{T("المتبقي", "Remaining")}</p>
-          <h3 className="text-2xl font-bold mt-1">{fmt(remaining)} EGP</h3>
+          <h3 className="text-2xl font-bold mt-1">{fmtCurrency(remaining, projectCurrency)}</h3>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-xl shadow">
           <p className="text-sm/5 opacity-90">{T("نسبة الاستهلاك", "Utilization")}</p>
@@ -95,7 +116,7 @@ export default function OverviewPanel({
                   <td className="px-3 py-2 text-sm text-gray-700">{r.date}</td>
                   <td className="px-3 py-2 text-sm text-gray-700">{r.category}</td>
                   <td className="px-3 py-2 text-sm text-gray-700">{r.note || "-"}</td>
-                  <td className="px-3 py-2 text-sm text-gray-700">{fmt(r.amount)} EGP</td>
+                  <td className="px-3 py-2 text-sm text-gray-700">{fmtCurrency(r.amount, projectCurrency)}</td>
                 </tr>
               ))}
             </tbody>

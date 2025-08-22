@@ -79,6 +79,7 @@ function EditProjectModal({ onClose, onProjectUpdated, project, clients }) {
       const projectData = {
         name: formData.name,
         total: parseFloat(formData.total) || 0,
+        currency: formData.currency || 'EGP',
         start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
         end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
         client_id: formData.client_id || null,
@@ -120,7 +121,8 @@ function EditProjectModal({ onClose, onProjectUpdated, project, clients }) {
         const { error: attrErr } = await supabase.from('project_attributes').insert([{
           project_id: project.id,
           image_url: imageUrl || null,
-          description: formData.description || null
+          description: formData.description || null,
+          currency: formData.currency || 'EGP'
         }]);
         if (attrErr) {
           // if metadata insert is also blocked, surface a clearer message to the user
@@ -151,7 +153,8 @@ function EditProjectModal({ onClose, onProjectUpdated, project, clients }) {
             const { error: attrErr } = await supabase.from('project_attributes').insert([{ 
               project_id: project.id,
               image_url: imageUrl || null,
-              description: formData.description || null
+              description: formData.description || null,
+              currency: formData.currency || 'EGP'
             }]);
             if (attrErr) {
               // surface a friendly error if metadata insert also fails
@@ -237,6 +240,7 @@ function EditProjectModal({ onClose, onProjectUpdated, project, clients }) {
                     <option value="EGP">EGP</option>
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
+                    <option value="SAR">SAR</option>
                   </select>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import { supabase } from './supabaseClient.js';
-import { toISO } from './utils/helpers.js';
+import { toISO, createPaymentPayloadWithLiveRates } from './utils/helpers.js';
 import { colors } from './utils/colors.js';
 import { Globe } from 'lucide-react';
 
@@ -316,18 +316,18 @@ export default function App() {
       }
     }
 
-    const { data, error } = await supabase.from('payments').insert({
-      amount: newPayment.amount,
-      pay_date: newPayment.date,
-      note: newPayment.note,
-      category_id: categoryId,
-      project_id: project.id
-    }).select().single();
+      // Use helper to build the insert payload and compute exchange_rate using live rates
+      const payload = await createPaymentPayloadWithLiveRates({
+        ...newPayment,
+        category_id: categoryId
+      }, project);
+
+      const { data, error } = await supabase.from('payments').insert(payload).select().single();
 
     if (error) console.error('Error adding payment:', error);
     else if (data) {
         const categoryName = categories.find(c => c.id === data.category_id)?.name || newPayment.category || '';
-        const formattedPayment = { ...data, date: data.pay_date, category: categoryName };
+  const formattedPayment = { ...data, date: data.pay_date, category: categoryName, currency: data.currency, exchange_rate: data.exchange_rate };
         setPayments(p => [...p, formattedPayment]);
     }
   };
@@ -360,6 +360,11 @@ export default function App() {
           dbPatch.category_id = categoryId;
           delete dbPatch.category;
       }
+      // Add type and status if they are in the patch
+  if (patch.type !== undefined) { dbPatch.type = patch.type; }
+  if (patch.status !== undefined) { dbPatch.status = patch.status; }
+  if (patch.currency !== undefined) { dbPatch.currency = patch.currency; }
+  if (patch.exchange_rate !== undefined) { dbPatch.exchange_rate = patch.exchange_rate; }
       const { data, error } = await supabase.from('payments').update(dbPatch).eq('id', id).select().single();
       if (error) console.error('Error updating payment:', error);
       else if (data) {
@@ -370,16 +375,77 @@ export default function App() {
   };
 
   // --- Milestone CRUD ---
-  const addMilestone = async () => {
-    const { data, error } = await supabase.from('milestones').insert({ 
-      title: "معلم جديد", 
-      date: toISO(new Date()), 
-      status: "in-progress", 
-      project_id: project.id 
-    }).select().single();
-    
-    if (error) console.error('Error adding milestone:', error);
-    else if (data) setMilestones(m => [...m, data]);
+  // Accept an optional payload from the UI. If not provided, create a default milestone.
+  const addMilestone = async (payload = {}) => {
+    const insertPayload = {
+      title: payload.title || "معلم جديد",
+      date: payload.date || toISO(new Date()),
+      status: payload.status || "in-progress",
+      project_id: project.id,
+      note: payload.note ?? null,
+      budget: payload.budget ?? null,
+      deliverable_ids: payload.deliverable_ids ?? null,
+    };
+    // Clean empty strings to avoid DB date/number parse issues
+    if (insertPayload.date === "") delete insertPayload.date;
+    if (insertPayload.budget === "") delete insertPayload.budget;
+    if (insertPayload.note === "") delete insertPayload.note;
+    // Attempt insert with resilience against missing columns in the remote schema.
+    // If PostgREST returns PGRST204 (Could not find the 'X' column...), remove that key and retry.
+    let attempts = 0;
+    let maxAttempts = 6;
+    let resultData = null;
+    let lastError = null;
+    // clone payload we'll mutate on retries
+    const payloadToSend = { ...insertPayload };
+
+    while (attempts < maxAttempts) {
+      attempts += 1;
+      try {
+        const { data, error } = await supabase.from('milestones').insert(payloadToSend).select().single();
+        if (!error && data) {
+          resultData = data;
+          lastError = null;
+          break;
+        }
+        if (error) {
+          lastError = error;
+          // handle schema-cache missing column error from PostgREST
+          // message example: "Could not find the 'note' column of 'milestones' in the schema cache"
+          const msg = (error.message || "") + "";
+          const m = msg.match(/Could not find the '\\'?(\\w+)\\'? column/i) || msg.match(/Could not find the \'([^']+)\' column/i) || msg.match(/Could not find the '([^']+)' column of 'milestones'/i);
+          if (error.code === 'PGRST204' && m) {
+            // try to extract column name robustly
+            const col = m[1] || m[2] || m[0];
+            if (col && col in payloadToSend) {
+              console.warn(`Milestone insert: removing unknown column '${col}' and retrying`);
+              delete payloadToSend[col];
+              // continue to retry
+              continue;
+            }
+          }
+          // if not a PGRST204 or cannot parse column, break and log
+          console.error('Error adding milestone:', error);
+          break;
+        }
+      } catch (err) {
+        lastError = err;
+        console.error('Unexpected error inserting milestone:', err);
+        break;
+      }
+    }
+
+    if (lastError) {
+      // expose original error in console and return null so UI doesn't crash
+      console.error('Failed to add milestone after retries:', lastError);
+      return null;
+    }
+
+    if (resultData) {
+      setMilestones(m => [...m, resultData]);
+      return resultData;
+    }
+    return null;
   };
 
   const removeMilestone = async (id) => {
@@ -389,9 +455,19 @@ export default function App() {
   };
 
   const updateMilestone = async (id, patch) => {
-    const { data, error } = await supabase.from('milestones').update(patch).eq('id', id).select().single();
-    if (error) console.error('Error updating milestone:', error);
-    else if (data) setMilestones(arr => arr.map(it => it.id === id ? data : it));
+    const dbPatch = { ...patch };
+    if (dbPatch.date === "") delete dbPatch.date;
+    if (dbPatch.budget === "") delete dbPatch.budget;
+    const { data, error } = await supabase.from('milestones').update(dbPatch).eq('id', id).select().single();
+    if (error) {
+      console.error('Error updating milestone:', error);
+      return null;
+    }
+    if (data) {
+      setMilestones(arr => arr.map(it => it.id === id ? data : it));
+      return data;
+    }
+    return null;
   };
 
   // --- Deliverable CRUD ---

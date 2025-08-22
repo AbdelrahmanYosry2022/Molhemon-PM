@@ -1,5 +1,6 @@
 // src/components/charts/SpendingOverTimeChart.jsx
 import React, { useMemo } from "react";
+import { fmtCurrency } from "../../utils/helpers";
 
 /**
  * رسم SVG بسيط للصرف التراكمي عبر الزمن.
@@ -67,7 +68,7 @@ export default function SpendingOverTimeChart({ payments = [], currency = "EGP",
     data.map((d, i) => `L ${x(i)} ${y(d.cumulative)}`).join(" ") +
     ` L ${x(maxX)} ${y(0)} Z`;
 
-  const fmt = (n) => `${Number(n).toLocaleString("en-US")} ${currency}`;
+  const fmt = (n) => fmtCurrency(n, currency);
 
   return (
     <div className="w-full">
