@@ -27,6 +27,7 @@ function ProjectDashboard({
   addDeliverable,
   removeDeliverable,
   updateDeliverable,
+  reorderDeliverables,
   language,
   clients,
   deliverables,
@@ -95,7 +96,7 @@ function ProjectDashboard({
         />
       )}
 
-      <ProjectSections
+  <ProjectSections
         projectId={project?.id}
         language={language || "ar"}
         project={project}
@@ -143,6 +144,7 @@ function ProjectDashboard({
         addDeliverable={addDeliverable}
         removeDeliverable={removeDeliverable}
         updateDeliverable={updateDeliverable}
+  reorderDeliverables={reorderDeliverables}
       />
     </div>
   );

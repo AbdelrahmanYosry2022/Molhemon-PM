@@ -446,7 +446,7 @@ export default function PaymentsTable({
           <table className="min-w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className={th}>التاريخ</th>
+                <th className={th} justify-start >التاريخ</th>
                 <th className={th}>النوع</th>
                 <th className={th}>البند</th>
                 <th className={th}>الحالة</th>

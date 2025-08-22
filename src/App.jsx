@@ -491,17 +491,23 @@ export default function App() {
   // Strip owner_id if present — the deliverables table doesn't have this column
   if ('owner_id' in payload) delete payload.owner_id;
 
-    const { data, error } = await supabase.from('deliverables').insert(payload).select().single();
-    
+  // Safeguard: if DB still enforces a type CHECK constraint that doesn't include
+  // 'typography', map it to 'branding' as a temporary fallback so inserts won't fail.
+  if (payload.type === 'typography') payload.type = 'branding';
+
+  const { data, error } = await supabase.from('deliverables').insert(payload).select().single();
     if (error) {
       console.error('Error adding deliverable:', error);
-      // Optionally, you could set an error message state here to display to the user
-      // setErrorMsg(`Failed to add deliverable: ${error.message}`);
-    } else if (data) {
+      // propagate the error so callers can handle it
+      throw error;
+    }
+    if (data) {
       console.log('Deliverable added successfully:', data);
       // Prepend new deliverable so it appears at the top of the list/table
       setDeliverables(d => [data, ...d]);
+      return data;
     }
+    return null;
   };
 
   const removeDeliverable = async (id) => {
@@ -517,12 +523,82 @@ export default function App() {
   if (dbPatch.type === "") delete dbPatch.type;
   // Remove owner_id if present — deliverables table doesn't include this column
   if ('owner_id' in dbPatch) delete dbPatch.owner_id;
+  // Optimistic update: apply patch locally first
+  let previous = null;
+  setDeliverables(arr => {
+    previous = arr;
+    return arr.map(it => it.id === id ? { ...it, ...dbPatch } : it);
+  });
 
-  const { data, error } = await supabase.from('deliverables').update(dbPatch).eq('id', id).select().single();
-    if (error) console.error('Error updating deliverable:', error);
-    else if (data) setDeliverables(arr => arr.map(it => it.id === id ? data : it));
+  try {
+    // Map 'typography' to a permitted DB value when server-side constraint hasn't been updated.
+    if (dbPatch.type === 'typography') dbPatch.type = 'branding';
+
+    const { data, error } = await supabase.from('deliverables').update(dbPatch).eq('id', id).select().single();
+    if (error) {
+      console.error('Error updating deliverable:', error);
+      // revert
+      if (previous) setDeliverables(previous);
+      throw error;
+    }
+    if (data) {
+      setDeliverables(arr => arr.map(it => it.id === id ? data : it));
+      return data;
+    }
+    return null;
+  } catch (err) {
+    // ensure state is reverted already
+    throw err;
+  }
   };
 
+  // --- Deliverables Row Move ---
+  const moveDeliverableUp = (id) => {
+    setDeliverables(d => {
+  const idx = d.findIndex(item => String(item.id) === String(id));
+      if (idx > 0) {
+        const arr = [...d];
+        [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+        return arr;
+      }
+      return d;
+    });
+  };
+
+  const moveDeliverableDown = (id) => {
+    setDeliverables(d => {
+  const idx = d.findIndex(item => String(item.id) === String(id));
+      if (idx !== -1 && idx < d.length - 1) {
+        const arr = [...d];
+        [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+        return arr;
+      }
+      return d;
+    });
+  };
+
+  // Reorder deliverables by moving srcId before/after destId depending on position
+  const reorderDeliverables = (srcId, destId, position = 'before') => {
+    setDeliverables(prev => {
+      const arr = [...prev];
+      const srcIdx = arr.findIndex(x => String(x.id) === String(srcId));
+      if (srcIdx === -1) return prev;
+      const [item] = arr.splice(srcIdx, 1);
+      if (!destId) {
+        // if no destId provided, append to end
+        arr.push(item);
+      } else {
+        const destIdx = arr.findIndex(x => String(x.id) === String(destId));
+        if (destIdx === -1) {
+          arr.push(item);
+        } else {
+          const insertAt = position === 'after' ? destIdx + 1 : destIdx;
+          arr.splice(insertAt, 0, item);
+        }
+      }
+      return arr;
+    });
+  };
   // --- Category CRUD ---
   const addCategory = async () => {
     const { data, error } = await supabase.from('categories').insert({ 
@@ -723,6 +799,9 @@ export default function App() {
                 addDeliverable={addDeliverable}
                 removeDeliverable={removeDeliverable}
                 updateDeliverable={updateDeliverable}
+                reorderDeliverables={reorderDeliverables}
+                moveDeliverableUp={moveDeliverableUp}
+                moveDeliverableDown={moveDeliverableDown}
                 language={language}
                 clients={clients}
                 teamMembers={teamMembers}

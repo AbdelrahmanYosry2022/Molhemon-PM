@@ -45,6 +45,7 @@ export default function ProjectSections({
   addMilestone,
   updateMilestone,
   removeMilestone,
+  reorderDeliverables,
 }) {
   const isAr = language === "ar";
   const T = (ar, en) => (isAr ? ar : en);
@@ -157,6 +158,7 @@ export default function ProjectSections({
             onUpdate={updateDeliverable}
             onRemove={removeDeliverable}
             teamMembers={teamMembers}
+            onReorderDeliverables={reorderDeliverables}
           />
         )}
 

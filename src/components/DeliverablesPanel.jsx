@@ -1,7 +1,7 @@
 // src/components/DeliverablesPanel.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import { CheckCircle2, Clock, XCircle, Eye, Paperclip, Pencil, Trash2, Copy,
-         Mic, Video, Film, BookOpen, Image, Layers, Globe, Star, Code, Plus, Check, X } from "lucide-react";
+         Mic, Video, Film, BookOpen, Image, Layers, Globe, Star, Code, Type, Plus, Check, X, SlidersHorizontal } from "lucide-react";
 import driveSvg from '../assets/google-drive.svg';
 
 /** حالات المخرجات */
@@ -34,6 +34,7 @@ const TYPES = {
   "logo":          { label: "شعار",          cls: "bg-rose-50 text-rose-700 border-rose-200", icon: Star },
   "web":           { label: "موقع برمجي",    cls: "bg-cyan-50 text-cyan-700 border-cyan-200", icon: Code },
   "wordpress":     { label: "موقع وردبريس",  cls: "bg-slate-50 text-slate-700 border-slate-200", icon: Globe },
+  "typography":    { label: "تايبوجرافي",    cls: "bg-indigo-50 text-indigo-700 border-indigo-200", icon: Type },
 };
 
 function TypeBadge({ value }) {
@@ -72,10 +73,13 @@ const CURRENCY_LABELS = {
   SAR: 'ريال سعودي'
 };
 
-export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemove, teamMembers }) {
+export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemove, teamMembers, moveDeliverableUp, moveDeliverableDown, onReorderDeliverables }) {
   // يبدأ دائماً ببيانات فارغة عند الإنشاء
   const demo = useMemo(() => items, [items]);
   console.log('DeliverablesPanel: items prop updated', items);
+
+  // Drag state for visual feedback
+  const [dragState, setDragState] = useState({ srcId: null, overId: null, position: null });
 
   // فلاتر
   const [q, setQ] = useState("");
@@ -91,12 +95,15 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
       (!from || (x.due && x.due >= from)) &&
       (!to || (x.due && x.due <= to))
     );
-    r.sort((a,b) => {
-      const k = sort.key;
-      const av = a[k] ?? "", bv = b[k] ?? "";
-      const cmp = String(av).localeCompare(String(bv));
-      return sort.dir === "asc" ? cmp : -cmp;
-    });
+    // If no sort key is set (cleared filter), keep original order (no sorting)
+    const k = sort?.key;
+    if (k) {
+      r.sort((a,b) => {
+        const av = a[k] ?? "", bv = b[k] ?? "";
+        const cmp = String(av).localeCompare(String(bv));
+        return sort.dir === "asc" ? cmp : -cmp;
+      });
+    }
     console.log('DeliverablesPanel: filtered items', r);
     return r;
   }, [demo, q, status, from, to, sort]);
@@ -128,14 +135,22 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
   };
   const closeEdit = () => setEditing(null);
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editing) return;
-  const cleaned = { ...editing, links: normalizeLinks(editing.links) };
-  // remove temporary UI-only keys (prefixed with _)
-  Object.keys(cleaned).forEach(k => { if (k.startsWith('_')) delete cleaned[k]; });
-  const payload = cleaned;
-    editing.id ? onUpdate?.(editing.id, payload) : onAdd?.(payload);
-    closeEdit();
+    const cleaned = { ...editing, links: normalizeLinks(editing.links) };
+    Object.keys(cleaned).forEach(k => { if (k.startsWith('_')) delete cleaned[k]; });
+    const payload = cleaned;
+    try {
+      if (editing.id) {
+        await onUpdate?.(editing.id, payload);
+      } else {
+        await onAdd?.(payload);
+      }
+      closeEdit();
+    } catch (err) {
+      console.error('Save deliverable failed:', err);
+      alert('حصل خطأ أثناء حفظ المخرج: ' + (err.message || String(err)));
+    }
   };
 
   const removeRow = (id) => onRemove?.(id);
@@ -223,8 +238,10 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
           <table className="min-w-full">
             <thead className="bg-gray-50">
               <tr>
-                {[
-                  { k:"title", label:"العنوان" },
+          {[
+            // Drag handle column (visual only) will be rendered as an extra th before title
+            { k: "__drag", label: "" },
+            { k:"title", label:"العنوان" },
                   { k:"owner", label:"المسؤول" },
                   { k:"due",   label:"تاريخ التسليم" },
                   { k:"type",  label:"النوع" },
@@ -244,91 +261,140 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
                     </button>
                   </th>
                 ))}
-                <th className={th}></th>
+                <th className={th}>
+                  <div className="flex items-center justify-center">
+                    {/** button shows active style when sort.key is set */}
+                    <button
+                      onClick={() => setSort({ key: null, dir: 'asc' })}
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium ${sort?.key ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-100' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'}`}
+                      title="مسح الفلتر"
+                    >
+                      <SlidersHorizontal size={14} />
+                      <span>مسح الفلتر</span>
+                    </button>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(row => (
-                <tr key={row.id} className="odd:bg-white even:bg-gray-50">
-                  <td className={`${td} font-medium text-gray-800`}>{row.title}</td>
-                  <td className={td}>
-                    {/* show avatar next to owner name when available */}
-                    {(() => {
-                      const tm = Array.isArray(teamMembers) ? teamMembers : [];
-                      const member = tm.find(m => (row.owner_id && m.id === row.owner_id) || (m.name && m.name === row.owner));
-                      const avatar = (member && member.avatar_url) || row.avatar_url || null;
-                      const displayName = row.owner || (member && (member.name || member.full_name)) || "-";
-                      if (displayName === "-") return displayName;
-                      return (
-                        <div className="flex items-center justify-start gap-2">
-                          {avatar ? (
-                            <img src={avatar} alt={displayName} className="w-7 h-7 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
-                              {String(displayName).split(" ").map(s => s[0]).filter(Boolean).slice(0,2).join("")}
-                            </div>
-                          )}
-                          <span>{displayName}</span>
-                        </div>
-                      );
-                    })()}
-                  </td>
-                  <td className={td}>{row.due || "-"}</td>
-                  <td className={td}><TypeBadge value={row.type} /></td>
-                  <td className={td}><StatusBadge value={row.status} /></td>
-                  <td className={td}>{row.cost != null ? (Number(row.cost).toLocaleString(undefined, { maximumFractionDigits: 0 })) : '-'}</td>
-                  <td className={td}>{row.currency ? (CURRENCY_LABELS[row.currency] || row.currency) : '-'}</td>
-                  <td className={td}>
-                      {row.links?.length ? (
-                      <div className="flex items-center gap-2 flex-wrap justify-start">
-                        {row.links.map((u, i) => (
-                  <a key={i} href={u} target="_blank" rel="noopener noreferrer"
-                    title={u}
-                    aria-label={`فتح الرابط: ${u}`}
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border text-sm text-gray-700 bg-white hover:bg-gray-50">
-                            {/* icon-only badge */}
-                            <FaviconIcon url={u} size={16} />
-                          </a>
-                        ))}
-                      </div>
-                    ) : <span className="text-gray-400 text-xs">—</span>}
-                  </td>
-                  <td className={td}>
-                    <div className="flex items-center gap-2 justify-start">
-                      <button
-                        onClick={() => {
-                          const copy = { ...row };
-                          // remove id so parent treats this as a new deliverable
-                          if (copy.id) delete copy.id;
-                          // normalize links if present
-                          if (copy.links && !Array.isArray(copy.links)) copy.links = String(copy.links).split('\n').map(s => s.trim()).filter(Boolean);
-                          onAdd?.(copy);
+              {filtered.map((row, idx) => {
+                const pos = (dragState.overId === row.id) ? dragState.position : null;
+                const extraClass = pos === 'before' ? 'border-t-4 border-emerald-500' : (pos === 'after' ? 'border-b-4 border-emerald-500' : '');
+                return (
+                  <tr key={row.id} className={`odd:bg-white even:bg-gray-50 ${extraClass}`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const mid = rect.top + rect.height / 2;
+                        const position = (e.clientY < mid) ? 'before' : 'after';
+                        setDragState(ds => ({ ...ds, overId: row.id, position }));
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const srcId = e.dataTransfer.getData('text/plain');
+                        const destId = row.id;
+                        const position = dragState.position || 'before';
+                        if (typeof onReorderDeliverables === 'function') onReorderDeliverables(srcId, destId, position);
+                        setDragState({ srcId: null, overId: null, position: null });
+                      }}
+                  >
+                    <td className={td} style={{ width: 40 }}>
+                      <div
+                        className="flex items-center justify-center"
+                        title="اسحب لتحريك الصف"
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          e.dataTransfer.setData('text/plain', String(row.id));
+                          e.dataTransfer.effectAllowed = 'move';
+                          try { e.dataTransfer.setDragImage(e.currentTarget, 10, 10); } catch (err) {}
+                          setDragState(ds => ({ ...ds, srcId: row.id }));
                         }}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 inline-flex items-center gap-1"
-                        title="تكرار"
+                        onDragEnd={() => setDragState({ srcId: null, overId: null, position: null })}
                       >
-                        <Copy size={14} /> تكرار
-                      </button>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400 cursor-grab" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M7 4a1 1 0 100 2 1 1 0 000-2zM7 8a1 1 0 100 2 1 1 0 000-2zM7 12a1 1 0 100 2 1 1 0 000-2zM13 4a1 1 0 100 2 1 1 0 000-2zM13 8a1 1 0 100 2 1 1 0 000-2zM13 12a1 1 0 100 2 1 1 0 000-2z" />
+                        </svg>
+                      </div>
+                    </td>
+                    <td className={`${td} font-medium text-gray-800`}>{row.title}</td>
+                    <td className={td}>
+                      {/* show avatar next to owner name when available */}
+                      {(() => {
+                        const tm = Array.isArray(teamMembers) ? teamMembers : [];
+                        const member = tm.find(m => (row.owner_id && m.id === row.owner_id) || (m.name && m.name === row.owner));
+                        const avatar = (member && member.avatar_url) || row.avatar_url || null;
+                        const displayName = row.owner || (member && (member.name || member.full_name)) || "-";
+                        if (displayName === "-") return displayName;
+                        return (
+                          <div className="flex items-center justify-start gap-2">
+                            {avatar ? (
+                              <img src={avatar} alt={displayName} className="w-7 h-7 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+                                {String(displayName).split(" ").map(s => s[0]).filter(Boolean).slice(0,2).join("")}
+                              </div>
+                            )}
+                            <span>{displayName}</span>
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className={td}>{row.due || "-"}</td>
+                    <td className={td}><TypeBadge value={row.type} /></td>
+                    <td className={td}><StatusBadge value={row.status} /></td>
+                    <td className={td}>{row.cost != null ? (Number(row.cost).toLocaleString(undefined, { maximumFractionDigits: 0 })) : '-'}</td>
+                    <td className={td}>{row.currency ? (CURRENCY_LABELS[row.currency] || row.currency) : '-'}</td>
+                    <td className={td}>
+                      {row.links?.length ? (
+                        <div className="flex items-center gap-2 flex-wrap justify-start">
+                          {row.links.map((u, i) => (
+                            <a key={i} href={u} target="_blank" rel="noopener noreferrer"
+                              title={u}
+                              aria-label={`فتح الرابط: ${u}`}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg border text-sm text-gray-700 bg-white hover:bg-gray-50">
+                              <FaviconIcon url={u} size={16} />
+                            </a>
+                          ))}
+                        </div>
+                      ) : <span className="text-gray-400 text-xs">—</span>}
+                    </td>
+                    <td className={td}>
+                      <div className="flex items-center gap-2 justify-start">
+                        <button
+                          onClick={() => {
+                            const copy = { ...row };
+                            if (copy.id) delete copy.id;
+                            if (copy.links && !Array.isArray(copy.links)) copy.links = String(copy.links).split('\n').map(s => s.trim()).filter(Boolean);
+                            onAdd?.(copy);
+                          }}
+                          className="text-xs px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 inline-flex items-center gap-1"
+                          title="تكرار"
+                        >
+                          <Copy size={14} /> تكرار
+                        </button>
 
-                      <button
-                        onClick={() => openEdit(row)}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 inline-flex items-center gap-1"
-                        title="تعديل"
-                      >
-                        <Pencil size={14} /> تعديل
-                      </button>
+                        <button
+                          onClick={() => openEdit(row)}
+                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 inline-flex items-center gap-1"
+                          title="تعديل"
+                        >
+                          <Pencil size={14} /> تعديل
+                        </button>
 
-                      <button
-                        onClick={() => removeRow(row.id)}
-                        className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 inline-flex items-center gap-1"
-                        title="حذف"
-                      >
-                        <Trash2 size={14} /> حذف
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <button
+                          onClick={() => removeRow(row.id)}
+                          className="text-xs px-2 py-1 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 inline-flex items-center gap-1"
+                          title="حذف"
+                        >
+                          <Trash2 size={14} /> حذف
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
         {filtered.length === 0 && (
                 <tr>
@@ -523,6 +589,7 @@ function EditModal({ value, onChange, onCancel, onSave, onDelete, teamMembers })
                 <option value="logo">شعار</option>
                 <option value="web">موقع برمجي</option>
                 <option value="wordpress">موقع وردبريس</option>
+                <option value="typography">تايبوجرافي</option>
               </select>
             </div>
             <div>
