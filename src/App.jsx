@@ -499,7 +499,8 @@ export default function App() {
       // setErrorMsg(`Failed to add deliverable: ${error.message}`);
     } else if (data) {
       console.log('Deliverable added successfully:', data);
-      setDeliverables(d => [...d, data]);
+      // Prepend new deliverable so it appears at the top of the list/table
+      setDeliverables(d => [data, ...d]);
     }
   };
 
@@ -562,9 +563,9 @@ export default function App() {
     return (
       <>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+          /* Use the locally registered Graphik Arabic as the app font */
           body {
-            font-family: "Cairo", "Inter", "Noto Kufi Arabic", system-ui, -apple-system, "Segoe UI", "Noto Sans Arabic", sans-serif;
+            font-family: 'Graphik Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif;
           }
           input, select, button {
             font-family: inherit;
@@ -607,9 +608,9 @@ export default function App() {
     return (
       <>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+          /* Use the locally registered Graphik Arabic as the app font */
           body {
-            font-family: "Cairo", "Inter", "Noto Kufi Arabic", system-ui, -apple-system, "Segoe UI", "Noto Sans Arabic", sans-serif;
+            font-family: 'Graphik Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif;
           }
           input, select, button {
             font-family: inherit;
@@ -642,9 +643,9 @@ export default function App() {
     return (
       <>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+          /* Use the locally registered Graphik Arabic as the app font */
           body {
-            font-family: "Cairo", "Inter", "Noto Kufi Arabic", system-ui, -apple-system, "Segoe UI", "Noto Sans Arabic", sans-serif;
+            font-family: 'Graphik Arabic', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif;
           }
           input, select, button {
             font-family: inherit;

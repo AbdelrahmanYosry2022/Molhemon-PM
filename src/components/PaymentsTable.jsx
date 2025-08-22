@@ -441,10 +441,7 @@ export default function PaymentsTable({
           <StatCard title="المبلغ المستحق" value={fmt(summary.due)} />
         </div>
 
-       
-      </div>
-
- {/* الجدول */}
+        {/* الجدول */}
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50">
@@ -483,6 +480,7 @@ export default function PaymentsTable({
             </tbody>
           </table>
         </div>
+      </div>
 
       {/* Add/Edit Modal */}
       {editing && (

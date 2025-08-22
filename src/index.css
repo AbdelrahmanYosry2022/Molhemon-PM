@@ -1,19 +1,93 @@
+
+/* Global styles and local Graphik Arabic font registration */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --fw-thin: 100;
+  --fw-extralight: 200;
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-black: 900;
+
   color-scheme: light;
   color: #213547;
   background-color: #ffffff;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
+/* Local @font-face declarations for Graphik Arabic (files live in public/fonts/) */
+@font-face {
+  font-family: 'Graphik Arabic';
+  src: url('/fonts/GRAPHIK ARABIC THIN.woff') format('woff');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Graphik Arabic';
+  src: url('/fonts/GRAPHIK ARABIC EXTRALIGHT.woff') format('woff');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Graphik Arabic';
+  src: url('/fonts/GRAPHIK ARABIC LIGHT.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Graphik Arabic';
+  src: url('/fonts/GRAPHIK ARABIC.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Graphik Arabic';
+  src: url('/fonts/GRAPHIK ARABIC MEDIUM.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Graphik Arabic';
+  src: url('/fonts/GRAPHIK ARABIC SEMIBOLD.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Graphik Arabic';
+  src: url('/fonts/GRAPHIK ARABIC BOLD.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Graphik Arabic';
+  src: url('/fonts/GRAPHIK ARABIC BLACK.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Base layout */
 html, body, #root {
   height: 100%;
   width: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: 'Graphik Arabic', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -21,30 +95,15 @@ html, body, #root {
   min-width: 100vw;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+/* Helpers and base elements */
+a { font-weight: 500; color: #646cff; text-decoration: inherit; }
+a:hover { color: #535bf2; }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
+.max-w-7xl { max-width: 100% !important; }
 
-/* Force full-width containers across the app */
-.max-w-7xl {
-  max-width: 100% !important;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
+h1 { font-size: 3.2em; line-height: 1.1; }
+h2 { font-size: 2rem; line-height: 1.15; }
+h3 { font-size: 1.25rem; line-height: 1.2; }
 
 button {
   border-radius: 8px;
@@ -56,109 +115,40 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
+button:focus, button:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
 
 /* Custom slider styles */
-.slider::-webkit-slider-thumb {
-  appearance: none;
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
-}
-
-.slider::-moz-range-thumb {
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
-  border: none;
-}
+.slider::-webkit-slider-thumb { appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #3b82f6; cursor: pointer; }
+.slider::-moz-range-thumb { height: 16px; width: 16px; border-radius: 50%; background: #3b82f6; cursor: pointer; border: none; }
 
 /* Line clamp utility */
-.line-clamp-4 {
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+.line-clamp-4 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
 
 /* RTL/LTR Support */
-[dir="rtl"] {
-  direction: rtl;
-  text-align: right;
-}
+[dir="rtl"] { direction: rtl; }
+[dir="rtl"] h3 { font-size: 1.25rem; font-weight: var(--fw-semibold); }
+[dir="rtl"] .flex-row { flex-direction: row; }
+[dir="rtl"] .text-right { text-align: right; }
+[dir="rtl"] .justify-end { justify-content: flex-end; }
+[dir="rtl"] .order-1 { order: 1; }
+[dir="rtl"] .order-2 { order: 2; }
 
-[dir="rtl"] .flex-row {
-  flex-direction: row;
-}
-
-[dir="rtl"] .text-right {
-  text-align: right;
-}
-
-[dir="rtl"] .justify-end {
-  justify-content: flex-end;
-}
-
-[dir="rtl"] .order-1 {
-  order: 1;
-}
-
-[dir="rtl"] .order-2 {
-  order: 2;
-}
-
-[dir="ltr"] {
-  direction: ltr;
-  text-align: left;
-}
-
-[dir="ltr"] .flex-row-reverse {
-  flex-direction: row-reverse;
-}
-
-[dir="ltr"] .text-left {
-  text-align: left;
-}
-
-[dir="ltr"] .justify-start {
-  justify-content: flex-start;
-}
-
-[dir="ltr"] .order-1 {
-  order: 1;
-}
-
-[dir="ltr"] .order-2 {
-  order: 2;
-}
+[dir="ltr"] { direction: ltr; text-align: left; }
+[dir="ltr"] .flex-row-reverse { flex-direction: row-reverse; }
+[dir="ltr"] .text-left { text-align: left; }
+[dir="ltr"] .justify-start { justify-content: flex-start; }
+[dir="ltr"] .order-1 { order: 1; }
+[dir="ltr"] .order-2 { order: 2; }
 
 /* Responsive RTL/LTR adjustments */
 @media (max-width: 768px) {
-  [dir="rtl"] .md\:flex-row {
-    flex-direction: row;
-  }
-  
-  [dir="ltr"] .md\:flex-row-reverse {
-    flex-direction: row-reverse;
-  }
+  [dir="rtl"] .md\:flex-row { flex-direction: row; }
+  [dir="ltr"] .md\:flex-row-reverse { flex-direction: row-reverse; }
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+  :root { color: #213547; background-color: #ffffff; }
+  a:hover { color: #747bff; }
+  button { background-color: #f9f9f9; }
 }
+/* RTL/LTR Support */

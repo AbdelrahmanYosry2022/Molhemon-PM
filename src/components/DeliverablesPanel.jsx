@@ -47,13 +47,15 @@ function TypeBadge({ value }) {
 }
 
 function toCSV(rows) {
-  const header = ["العنوان","المسؤول","تاريخ التسليم","النوع","الحالة","روابط/مرفقات","ملاحظات"];
+  const header = ["العنوان","المسؤول","تاريخ التسليم","النوع","الحالة","التكلفة","العملة","روابط/مرفقات","ملاحظات"];
   const body = rows.map(r => [
     r.title,
     r.owner || "",
     r.due || "",
     TYPES[r.type]?.label || r.type || "",
     STYLES[r.status]?.label || r.status,
+    r.cost != null ? Number(r.cost).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "",
+  (typeof CURRENCY_LABELS !== 'undefined' && CURRENCY_LABELS[r.currency]) ? CURRENCY_LABELS[r.currency] : (r.currency || ""),
     (r.links?.join(" | ")) || "",
     r.note || ""
   ]);
@@ -61,6 +63,14 @@ function toCSV(rows) {
     .map(a => a.map(x => `"${String(x ?? "").replace(/"/g, '""')}"`).join(","))
     .join("\n");
 }
+
+// Currency labels in Arabic
+const CURRENCY_LABELS = {
+  EGP: 'جنية',
+  USD: 'دولار',
+  EUR: 'يورو',
+  SAR: 'ريال سعودي'
+};
 
 export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemove, teamMembers }) {
   // يبدأ دائماً ببيانات فارغة عند الإنشاء
@@ -101,8 +111,8 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
   }), [filtered]);
 
   // مودال تعديل/إضافة
-  const [editing, setEditing] = useState(null); // {id,title,owner,due,status,links[],note}
-  const openAdd = () => setEditing({ id: null, title: "", owner: "", due: "", type: "podcast", status: "pending", links: [], note: "" });
+  const [editing, setEditing] = useState(null); // {id,title,owner,due,status,links[],note,currency}
+  const openAdd = () => setEditing({ id: null, title: "", owner: "", due: "", type: "podcast", status: "pending", links: [], note: "", cost: null, currency: 'EGP' });
   const openEdit = (row) => {
     const prepared = { ...row, links: normalizeLinks(row.links) };
     // If the row has an owner name but no owner_id, try to resolve it from teamMembers so
@@ -219,6 +229,8 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
                   { k:"due",   label:"تاريخ التسليم" },
                   { k:"type",  label:"النوع" },
                   { k:"status",label:"الحالة" },
+                  { k:"cost", label:"التكلفة" },
+                  { k:"currency", label: "العملة" },
                   { k:"links", label:"روابط/ملفات" },
                 ].map(col => (
                   <th key={col.k} className={th}>
@@ -264,6 +276,8 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
                   <td className={td}>{row.due || "-"}</td>
                   <td className={td}><TypeBadge value={row.type} /></td>
                   <td className={td}><StatusBadge value={row.status} /></td>
+                  <td className={td}>{row.cost != null ? (Number(row.cost).toLocaleString(undefined, { maximumFractionDigits: 0 })) : '-'}</td>
+                  <td className={td}>{row.currency ? (CURRENCY_LABELS[row.currency] || row.currency) : '-'}</td>
                   <td className={td}>
                       {row.links?.length ? (
                       <div className="flex items-center gap-2 flex-wrap justify-start">
@@ -316,9 +330,9 @@ export default function DeliverablesPanel({ items = [], onAdd, onUpdate, onRemov
                 </tr>
               ))}
 
-              {filtered.length === 0 && (
+        {filtered.length === 0 && (
                 <tr>
-                  <td className="px-3 py-6 text-center text-sm text-gray-500" colSpan={6}>
+          <td className="px-3 py-6 text-center text-sm text-gray-500" colSpan={9}>
                     لا توجد نتائج مطابقة.
                   </td>
                 </tr>
@@ -434,7 +448,7 @@ function EditModal({ value, onChange, onCancel, onSave, onDelete, teamMembers })
           {v.id ? "تعديل المخرج" : "إضافة مخرج"}
         </h3>
 
-        <div className="grid gap-3">
+          <div className="grid gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">العنوان</label>
             <input
@@ -588,6 +602,34 @@ function EditModal({ value, onChange, onCancel, onSave, onDelete, teamMembers })
               value={v.note || ""}
               onChange={(e) => onChange(s => ({ ...s, note: e.target.value }))}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">التكلفة</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-right"
+                value={v.cost ?? ""}
+                onChange={(e) => onChange(s => ({ ...s, cost: e.target.value === "" ? null : Number(e.target.value) }))}
+                placeholder="0"
+              />
+            </div>
+        <div>
+              <label className="block text-xs text-gray-500 mb-1">العملة</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-sm text-right"
+                value={v.currency || 'EGP'}
+                onChange={(e) => onChange(s => ({ ...s, currency: e.target.value }))}
+              >
+                <option value="EGP">جنية</option>
+                <option value="USD">دولار</option>
+                <option value="EUR">يورو</option>
+          <option value="SAR">ريال سعودي</option>
+              </select>
+            </div>
           </div>
         </div>
 
