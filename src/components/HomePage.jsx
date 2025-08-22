@@ -1,6 +1,7 @@
 // src/components/HomePage.jsx
 import React, { useState } from 'react';
 import {
+  Folders, // Icon for Portfolio
   LayoutDashboard,
   Users,
   FileText,
@@ -9,7 +10,8 @@ import {
   Calendar,
   Briefcase,
   Receipt,
-  ArrowRight,
+  HardDrive, // Icon for Assets
+  ArrowRight, // Keep existing ArrowRight
   Sparkles,
   Users2
 } from 'lucide-react';
@@ -23,7 +25,10 @@ const ICON_PALETTE = {
   reports: 'text-orange-600',
   calendar: 'text-cyan-600',
   invoices: 'text-green-600',
-  financials: 'text-pink-600'
+  financials: 'text-pink-600', // Added the missing comma here
+  portfolio: 'text-blue-600', // Add color for Portfolio
+  services: 'text-yellow-600', // Add color for Services
+  assets: 'text-red-600' // Add color for Assets
 };
 
 const HomePage = ({ onNavigate, language = 'ar' }) => {
@@ -79,6 +84,30 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
       delay: 0.3,
       status: 'soon'
     },
+    {
+      id: 'portfolio',
+      title: 'حافظة الأعمال',
+      subtitle: 'عرض وتنظيم مشاريعك المكتملة والحالية في مكان واحد.',
+      icon: Folders, // Icon for Portfolio
+      delay: 0.35,
+      status: 'soon'
+    },
+    {
+      id: 'services',
+      title: 'إدارة الخدمات',
+      subtitle: 'تحديد وإدارة قائمة الخدمات التي تقدمها لعملائك.',
+      icon: Sparkles, // Using Sparkles for services
+      delay: 0.4,
+      status: 'soon'
+    },
+    {
+      id: 'assets',
+      title: 'إدارة الأصول',
+      subtitle: 'تتبع وإدارة الأصول المادية والرقمية لمشروعك.',
+      icon: HardDrive, // Icon for Assets
+      delay: 0.45,
+      status: 'soon'
+    },
   ] : [
     {
       id: 'projects',
@@ -128,6 +157,30 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
       delay: 0.3,
       status: 'soon'
     },
+    {
+      id: 'portfolio',
+      title: 'Portfolio',
+      subtitle: 'Showcase and organize your completed and current projects in one place.',
+      icon: Folders, // Icon for Portfolio
+      delay: 0.35,
+      status: 'soon'
+    },
+    {
+      id: 'services',
+      title: 'Services Management',
+      subtitle: 'Define and manage the list of services you offer to clients.',
+      icon: Sparkles, // Icon for Services
+      delay: 0.4,
+      status: 'soon'
+    },
+    {
+      id: 'assets',
+      title: 'Assets Management',
+      subtitle: 'Track and manage the physical and digital assets for your project.',
+      icon: HardDrive, // Icon for Assets
+      delay: 0.45,
+      status: 'soon'
+    },
   ];
 
   const welcomeText = language === 'ar' ? 'مرحبًا بك في لوحة التحكم' : 'Welcome to the Dashboard';
@@ -137,14 +190,14 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
     <div className={`h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-50 relative overflow-y-auto flex items-center ${language === 'ar' ? 'rtl' : 'ltr'}`}>
       {/* Decorative backgrounds */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-  <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-cyan-200 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
-  <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '2s', animationDuration: '4s' }}></div>
-  {/* Restored subtle emerald artistic blob in center (reduced size) */}
-  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-200 to-teal-200 blur-3xl animate-pulse" style={{ animationDelay: '4s', animationDuration: '4s', width: '28rem', height: '28rem', opacity: 0.10 }}></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-cyan-200 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '2s', animationDuration: '4s' }}></div>
+        {/* Restored subtle emerald artistic blob in center (reduced size) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-200 to-teal-200 blur-3xl animate-pulse" style={{ animationDelay: '4s', animationDuration: '4s', width: '28rem', height: '28rem', opacity: 0.10 }}></div>
       </div>
 
       {/* Main centered area: occupy 60% width, centered */}
-  <main className="relative z-10 mx-auto flex flex-col items-center justify-center" style={{ width: '60vw', maxWidth: '1200px', minWidth: '760px', minHeight: '50vh' }}>
+      <main className="relative z-10 mx-auto flex flex-col items-center justify-center" style={{ width: '60vw', maxWidth: '1200px', minWidth: '760px', minHeight: '50vh' }}>
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
             <Sparkles size={16} />
@@ -155,7 +208,7 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
         </div>
 
         {/* 2x3 Grid - fixed card heights and unified design */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuItems.map((item, idx) => {
             const Icon = item.icon;
             const iconColor = ICON_PALETTE[item.id] || 'text-slate-600';
@@ -179,7 +232,12 @@ const HomePage = ({ onNavigate, language = 'ar' }) => {
 
                   <div className="flex items-start pt-5">
                     <div style={{ width: 60 }} className="flex-shrink-0">
-                      <Icon className={`${iconColor}`} size={28} />
+                      {/* Icon rendering: default gray, color on hover */}
+                      <Icon
+                        className={`transition-colors duration-300 ${hoveredCard === item.id ? iconColor : 'text-gray-400'}`}
+                        size={28}
+                      />
+
                     </div>
 
                     <div className="flex-1 pl-4 pr-2">
