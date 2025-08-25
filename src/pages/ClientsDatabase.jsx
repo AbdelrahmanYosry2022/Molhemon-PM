@@ -21,7 +21,7 @@ import {
   Globe
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import ClientAccountCard from './ClientAccountCard';
+import ClientAccountCard from '../components/ClientAccountCard';
 
 // نظام الترجمة
 const translations = {

@@ -9,9 +9,9 @@ import {
   XCircle,
   Copy,
 } from "lucide-react";
-import EditMemberModal from "./modals/EditMemberModal.jsx";
-import TeamMemberCard from './TeamMemberCard'; // Import the new card component
-import { supabase } from '../supabaseClient';
+import EditMemberModal from "../../modals/EditMemberModal.jsx";
+import TeamMemberCard from '../../ui/TeamMemberCard.jsx'; // Import the new card component
+import { supabase } from '../../../supabaseClient.js';
 
 /* ==================== Badges & Helpers ==================== */
 

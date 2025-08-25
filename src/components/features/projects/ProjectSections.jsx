@@ -1,13 +1,13 @@
 // src/components/ProjectSections.jsx
 import React, { useMemo, useState } from "react";
-import { supabase } from "../supabaseClient"; // استيراد supabase
+import { supabase } from "../../../supabaseClient.js"; // استيراد supabase
 
-import PaymentsTable from "./PaymentsTable.jsx";
+import PaymentsTable from "./financials/PaymentsTable.jsx";
 import MilestonesPanel from "./MilestonesPanel.jsx";
 import DeliverablesPanel from "./DeliverablesPanel.jsx";
-import TeamPanel from "./TeamPanel.jsx";
-import ProjectTeamManager from "./ProjectTeamManager.jsx";
-import ProjectTeamProvider, { useProjectTeam } from "./ProjectTeamProvider.jsx";
+import TeamPanel from "../team/TeamPanel.jsx";
+import ProjectTeamManager from "../team/ProjectTeamManager.jsx";
+import ProjectTeamProvider, { useProjectTeam } from "../../../contexts/ProjectTeamProvider.jsx";
 import FilesPanel from "./FilesPanel.jsx";
 import OverviewPanel from "./OverviewPanel.jsx";
 

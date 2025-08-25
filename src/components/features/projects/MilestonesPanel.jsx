@@ -1,8 +1,8 @@
 // src/components/MilestonesPanel.jsx
 import React, { useMemo, useState, useEffect } from "react";
-import { fmtCurrency } from "../utils/helpers";
+import { fmtCurrency } from "../../../utils/helpers.js";
 import { Calendar, CheckCircle2, AlertTriangle, Pencil, Trash2, X, Copy } from "lucide-react";
-import VisualTimeline from './VisualTimeline.jsx';
+import VisualTimeline from '../../VisualTimeline.jsx';
 
 const STATUS_COLORS = {
   done: "text-green-700 bg-green-50 border-green-200",

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 // lucide doesn't export some icon names in this version; use text/icon fallbacks
 import { Copy } from "lucide-react";
-import { fmtCurrency } from "../utils/helpers";
+import { fmtCurrency } from "../../../../utils/helpers";
 
 // --- Constants ---
 const TRANSACTION_TYPES = {

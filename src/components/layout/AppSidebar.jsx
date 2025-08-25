@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from "framer-motion";
 import { Plus, Trash2, ChevronsLeft, ChevronsRight, LayoutDashboard, MoreVertical, Edit } from "lucide-react";
-import { colors } from '../utils/colors';
+import { colors } from '../../utils/colors';
 
 function AppSidebar({ projects, activeId, setActiveId, addProject, deleteProject, activeProject, sidebarOpen, setSidebarOpen, openEditModal, openConfirmDelete }) {
   const [menuOpen, setMenuOpen] = useState(null);

@@ -9,9 +9,9 @@ import {
   ArrowLeft,
   Globe
 } from 'lucide-react';
-import TeamOverviewTab from './team/TeamOverviewTab';
-import TeamMembersTab from './team/TeamMembersTab';
-import TeamRolesTab from './team/TeamRolesTab';
+import TeamOverviewTab from '../components/team/TeamOverviewTab';
+import TeamMembersTab from '../components/team/TeamMembersTab';
+import TeamRolesTab from '../components/team/TeamRolesTab';
 import { supabase } from '../supabaseClient';
 
 const TeamDashboard = ({ onBack, language }) => {

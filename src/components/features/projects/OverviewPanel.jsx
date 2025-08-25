@@ -1,6 +1,6 @@
 // src/components/OverviewPanel.jsx
 import React, { useMemo, useEffect, useState } from "react";
-import { fmtCurrency, convertCurrency, fetchRates, DEFAULT_EXCHANGE_RATES } from "../utils/helpers";
+import { fmtCurrency, convertCurrency, fetchRates, DEFAULT_EXCHANGE_RATES } from "../../../utils/helpers";
 
 /**
  * لوحة "نظرة عامة" — KPIs بخلفية خضراء + ملخصات سريعة.
