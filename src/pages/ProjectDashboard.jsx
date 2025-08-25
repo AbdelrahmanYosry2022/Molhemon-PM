@@ -1,9 +1,9 @@
 // src/components/ProjectDashboard.jsx
 import React, { useState } from 'react';
-import { colors } from '../utils/colors';
-import ProjectSections from "./ProjectSections.jsx";
+import { colors } from '../utils/colors.js';
+import ProjectSections from '../components/features/projects/ProjectSections.jsx';
 import { Pencil } from 'lucide-react';
-import EditProjectModal from './EditProjectModal.jsx';
+import EditProjectModal from '../components/EditProjectModal.jsx';
 
 function ProjectDashboard({
   project,

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Card } from "./ui/card";
+import { Card } from "./ui/Card";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Badge } from "./ui/badge";
+import { Badge } from "./ui/Badge";
 import { MapPin, Mail, Phone, Calendar, Globe, Twitter, Linkedin, Eye, Edit2, Trash2 } from "lucide-react";
 import { fmtCurrency } from "../utils/helpers"; // Assuming fmtCurrency is available
 

@@ -21,8 +21,8 @@ import {
   CreditCard,
   Wallet
 } from 'lucide-react';
-import { Badge } from './ui/badge';
-import { Card } from './ui/card';
+import { Badge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
 
 const FinancialDashboard = ({ onBack, language = 'ar' }) => {
   const [activeTab, setActiveTab] = useState('overview');

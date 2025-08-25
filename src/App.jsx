@@ -6,15 +6,15 @@ import { colors } from './utils/colors.js';
 import { Globe } from 'lucide-react';
 
 // Import components
-import HomePage from './components/HomePage.jsx';
-import AppSidebar from './components/AppSidebar.jsx';
-import ProjectDashboard from './components/ProjectDashboard.jsx';
-import ClientsDatabase from './components/ClientsDatabase.jsx';
+import HomePage from './pages/HomePage.jsx';
+import AppSidebar from './components/layout/AppSidebar.jsx';
+import ProjectDashboard from './pages/ProjectDashboard.jsx';
+import ClientsDatabase from './pages/ClientsDatabase.jsx';
 import AddProjectModal from './components/AddProjectModal.jsx';
 import EditProjectModal from './components/EditProjectModal.jsx';
-import ConfirmDeleteModal from './components/ConfirmDeleteModal.jsx';
-import TeamDashboard from './components/TeamDashboard.jsx';
-import FinancialDashboard from './components/FinancialDashboard.jsx';
+import ConfirmDeleteModal from './components/ui/ConfirmDeleteModal.jsx';
+import TeamDashboard from './pages/TeamDashboard.jsx';
+import FinancialDashboard from './pages/FinancialDashboard.jsx';
 
 // نظام الترجمة للتطبيق الرئيسي
 const appTranslations = {

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Card } from "./ui/Card";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Badge } from "./ui/Badge";
+import { Card } from "./Card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "./Badge";
 import { MapPin, Mail, Phone, Calendar, Globe, Twitter, Linkedin, Eye, Edit2, Trash2, Pencil } from "lucide-react";
-import { ROLE_META, STATUS_META, RoleBadge, StatusBadge } from './TeamPanel';
+import { ROLE_META, STATUS_META, RoleBadge, StatusBadge } from '../features/team/TeamPanel';
 
 // Placeholder for translations
 const cardTranslations = {

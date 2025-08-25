@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { CheckCircle2, Clock, XCircle, Eye, Paperclip, Pencil, Trash2, Copy,
          Mic, Video, Film, BookOpen, Image, Layers, Globe, Star, Code, Type, Plus, Check, X, SlidersHorizontal } from "lucide-react";
-import driveSvg from '../assets/google-drive.svg';
+import driveSvg from '../../../assets/google-drive.svg';
 
 /** حالات المخرجات */
 const STYLES = {

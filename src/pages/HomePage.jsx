@@ -15,7 +15,7 @@ import {
   Sparkles,
   Users2
 } from 'lucide-react';
-import { Badge } from './ui/badge';
+import { Badge } from '../components/ui/Badge';
 
 const ICON_PALETTE = {
   projects: 'text-emerald-600',

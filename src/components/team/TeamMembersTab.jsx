@@ -8,7 +8,7 @@ import {
   Download,
   Mail
 } from 'lucide-react';
-import TeamMemberCard from '../TeamMemberCard';
+import TeamMemberCard from '../ui/TeamMemberCard.jsx';
 import EditMemberModal from '../modals/EditMemberModal';
 import { supabase } from '../../supabaseClient';
 
